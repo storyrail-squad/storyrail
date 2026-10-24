@@ -1,10 +1,10 @@
-/* Demo: the work notes each agent leaves in runs/issue-51/notes/<station>.md (sample data for the replay).
+/* Demo: the work notes each agent leaves in runs/issue-1/notes/<station>.md (sample data for the replay).
    A member's notes show in the chat once their step has started. */
 const DEMO_NOTES={
-  "req-fetch":["Read #51 and its comments, and the two documents the functional analyst attached: the Screen document and the API document.",
+  "req-fetch":["Read #1 and its comments, and the two documents the functional analyst attached: the Screen document and the API document.",
     "The story's Applications section names three apps. Discovery found them in GitLab: INSU-ta01 (backend), INSU-fa01 (backend, calls INSU-ta01) and INSU-sp01 (frontend, calls INSU-fa01).",
     "9 testable ACs, 3 per app: ta01-AC1..3 (info endpoint, 404), fa01-AC1..3 (facade, error mapping), sp01-AC1..3 (screen, empty and error states).",
-    "The API document didn't say what INSU-fa01 returns when INSU-ta01 has no info, so I asked. You answered 404 \"Task info not found\"; posted on #51.",
+    "The API document didn't say what INSU-fa01 returns when INSU-ta01 has no info, so I asked. You answered 404 \"Task info not found\"; posted on #1.",
     "Contracts provider first: INSU-ta01's own contract, its copy in INSU-fa01, then INSU-fa01's contract and its copy in INSU-sp01."],
   "dev@INSU-ta01":["Added GET /tasks/{id}/info with a query on the existing TaskRepository; nothing new in the schema.",
     "No info for a task returns 404 with the problem title from the API document.",
@@ -33,10 +33,10 @@ const DEMO_NOTES={
   "cicd":["Opened a merge request per app: INSU-ta01 !21, INSU-fa01 !34, INSU-sp01 !47. All MR pipelines went green.",
     "You approved the merge. Merged providers first: INSU-ta01, then INSU-fa01, then INSU-sp01, waiting for each main pipeline.",
     "All three pipelines green on main. Deployment with CDD is up to the team, in the same order."],
-  "orchestrator":["Relayed one question from Sindhu to you and posted the answer on #51.",
+  "orchestrator":["Relayed one question from Sindhu to you and posted the answer on #1.",
     "Built all three apps at the same time, each against its provider's contract with the provider stubbed.",
     "Fix round 1 went to the three developers; tests re-ran, and round 2 passed every gate.",
-    "Merged in dependency order after your OK; labelled #51 Ready for QA."]
+    "Merged in dependency order after your OK; labelled #1 Ready for QA."]
 };
 function demoNotes(m){ const ids=m.kind==="lead"?["orchestrator"]:memberStations(m); const out=[];
   ids.forEach(id=>{ const st=(state[id]||{}).status; if(id==="orchestrator"?!!run.startedAt:(st&&st!=="pending"&&st!=="skipped")) (DEMO_NOTES[id]||[]).forEach(n=>out.push(n)); });

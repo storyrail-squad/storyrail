@@ -1,16 +1,16 @@
-/* ---------- Demo replay: GitLab story #51 across three applications (INSU-ta01 ← INSU-fa01 ← INSU-sp01), on a loop ---------- */
+/* ---------- Demo replay: story #1 across three applications (INSU-ta01 ← INSU-fa01 ← INSU-sp01), on a loop ---------- */
 (()=>{
   const S="set", L="log", R="run", M="metric", F="findings", X="security";
   // [seconds, op, ...args] — the same operations the agents send through scripts/storyrail-status.mjs
   const TA="INSU-ta01", FA="INSU-fa01", SP="INSU-sp01";
   const APPS=[{id:TA,type:"backend",label:"task API",consumes:[]},{id:FA,type:"backend",label:"facade API",consumes:[TA]},{id:SP,type:"frontend",label:"frontend",consumes:[FA]}];
   const SCRIPT=[
-    [0,R,"phase","Requirements"],[0,L,"orchestrator","info","Run started for GitLab issue #51: Task info on the screen"],
-    [2,S,"req-fetch","running",20,"Reading #51, its Applications and documents"],
+    [0,R,"phase","Requirements"],[0,L,"orchestrator","info","Run started for issue #1: Task info on the screen"],
+    [2,S,"req-fetch","running",20,"Reading #1, its Applications and documents"],
     [4,"apps"],[4,L,"req-fetch","info","Found INSU-ta01 (backend), INSU-fa01 (backend, calls ta01), INSU-sp01 (frontend, calls fa01)"],
     [6,S,"req-fetch","running",60,"Contracts: INSU-ta01 first, then INSU-fa01"],
     [8,S,"req-fetch","waiting",80,"1 question for you"],[8,L,"req-fetch","warn","The API document doesn't say what INSU-fa01 returns when INSU-ta01 has no info: 404 or empty?"],
-    [11,L,"orchestrator","info","You answered: 404 \"Task info not found\". Posted on #51"],
+    [11,L,"orchestrator","info","You answered: 404 \"Task info not found\". Posted on #1"],
     [12,S,"req-fetch","done",100,"3 apps · 9 ACs"],[12,L,"req-fetch","ok","Spec: 3 ACs per app; ta01 and fa01 contracts updated, copies in fa01 and sp01"],
     [13,R,"phase","Build"],[13,L,"orchestrator","info","Build: all 3 apps at the same time, each against the contracts"],
     [14,S,"dev@"+TA,"running",10,"Reading the spec and the API document"],[14,S,"dev@"+FA,"running",10,"Reading the spec and ta01's contract"],[14,S,"dev@"+SP,"running",10,"Reading the Screen document"],
@@ -45,14 +45,14 @@
     [85,S,"cicd","running",45,"INSU-ta01 merged · CI running"],[85,L,"orchestrator","info","You approved the merge"],
     [89,S,"cicd","running",65,"INSU-fa01 merged · CI running"],[93,S,"cicd","running",85,"INSU-sp01 merged · CI running"],
     [97,S,"cicd","done",100,"3 apps merged · CI green"],[97,L,"cicd","ok","CI green on main: INSU-ta01, then INSU-fa01, then INSU-sp01"],
-    [98,R,"phase","Done"],[98,L,"orchestrator","ok","#51 labelled Ready for QA; deploy with CDD in the order ta01, fa01, sp01"],
+    [98,R,"phase","Done"],[98,L,"orchestrator","ok","#1 labelled Ready for QA; deploy with CDD in the order ta01, fa01, sp01"],
     [98,"end"]
   ];
   const LOOP=110; const STATIONS=["req-fetch","reviewer","gate","cicd"];
   let start=0, next=0, feed=[];
   function reset(){
     state=Object.fromEntries(STATIONS.map(s=>[s,{status:"pending",progress:0,note:""}]));
-    run={issues:[51],title:"Task info on the screen",repo:"https://github.com/storyrail-squad/squad-backlog",phase:"Requirements",startedAt:new Date().toISOString(),metrics:{}};
+    run={issues:[1],title:"Task info on the screen",repo:"https://github.com/storyrail-squad/squad-backlog",phase:"Requirements",startedAt:new Date().toISOString(),metrics:{}};
     feed=[]; next=0; start=performance.now(); feedSeen.clear(); $("feed").innerHTML="";
     ["k-unit","k-api","k-ui","k-rev","k-sec"].forEach(id=>{ $(id).textContent="—"; }); ["kb-unit","kb-api","kb-ui","kb-rev","kb-sec"].forEach(id=>bar(id,0)); $("findings").hidden=true;
     Object.values(chatCache).forEach(c=>{ c.chat=[]; });
