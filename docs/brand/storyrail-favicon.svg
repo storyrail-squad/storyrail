@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="StoryRail">
+<rect width="120" height="120" rx="28" fill="#12233D"/>
+<path d="M 90 32 H 46 A 14 14 0 0 0 46 60 H 74 A 14 14 0 0 1 74 88 H 30" fill="none" stroke="#FFFFFF" stroke-width="16"/>
+<circle cx="91" cy="32" r="12" fill="#F2A93B"/>
+<circle cx="29" cy="88" r="13" fill="#2F6BFF"/>
+</svg>

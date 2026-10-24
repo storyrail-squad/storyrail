@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>StoryRail</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"%3E%3Crect rx="28" fill="%2312233D"/%3E%3Cpath d="M 90 32 H 46 A 14 14 0 0 0 46 60 H 74 A 14 14 0 0 1 74 88 H 30" fill="none" stroke="%23FFFFFF" stroke-width="16"/%3E%3Ccircle cx="91" cy="32" r="12" fill="%23F2A93B"/%3E%3Ccircle cx="29" cy="88" r="13" fill="%232F6BFF"/%3E%3C/svg%3E">
 <script>/* theme: follow the system unless the viewer picked one */try{const t=localStorage.getItem("storyrail.theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,8 +50,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1
 .topbar{background:var(--brand-deep);color:var(--on-brand)}
 .topbar .in{max-width:1400px;margin:0 auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
 .brand{display:flex;gap:12px;align-items:center;min-width:0}
-.mark{width:46px;height:46px;border-radius:12px;background:#ffffff;display:grid;place-items:center;flex:none;box-shadow:0 2px 8px rgba(0,0,0,.18)}
-.mark svg{width:36px;height:36px}
+.mark{width:46px;height:46px;border-radius:11px;flex:none;box-shadow:0 2px 8px rgba(0,0,0,.22)}.mark svg{display:block;width:100%;height:100%}
 .tag{font-size:.78rem;letter-spacing:.04em;opacity:.75;margin:1px 0 0}
 h1{font-family:var(--f-display);font-weight:800;font-size:clamp(1.35rem,2.6vw,1.8rem);line-height:1.1;margin:0;letter-spacing:-.01em}
 .sub{margin:2px 0 0;font-size:.9rem;opacity:.85}
@@ -198,7 +198,7 @@ svg.wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-eve
 .performer .doing{font-family:var(--f-display);font-weight:600;font-size:clamp(1.15rem,2vw,1.5rem);line-height:1.25;margin:6px 0 4px;overflow-wrap:anywhere}
 .performer .meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:var(--muted);font-size:.85rem}
 .stage-ask{font:600 .85rem/1 var(--f-body);color:var(--brand-deep);background:var(--brand-soft);border:1px solid color-mix(in srgb,var(--brand) 40%,transparent);border-radius:999px;padding:7px 12px;cursor:pointer}
-.stage-empty{color:var(--muted);margin:0;font-size:1.05rem}
+.stage-empty{color:var(--muted);margin:0;font-size:1.05rem}.stage-empty.waiting{display:flex;align-items:center;gap:16px}.rails-art{width:64px;height:60px;flex:none;color:var(--ink)}
 
 .av{--sz:48px;--k:var(--brand);--kf:var(--brand-soft);--p:0;position:relative;width:var(--sz);height:var(--sz);flex:none;border-radius:50%;display:grid;place-items:center;
   background:conic-gradient(var(--k) calc(var(--p)*1%),color-mix(in srgb,var(--k) 18%,transparent) 0)}
@@ -418,7 +418,7 @@ svg.wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-eve
       <button type="button" data-theme-pick="dark" aria-pressed="false" aria-label="Dark theme" title="Dark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
     </div>
     <div class="brand">
-      <div class="mark" aria-hidden="true"><svg viewBox="0 0 64 64"><defs><linearGradient id="sr-g" x1="8" y1="56" x2="58" y2="8" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#6a3cf0"/><stop offset=".55" stop-color="#2f6ff0"/><stop offset="1" stop-color="#13d6e8"/></linearGradient><mask id="sr-rails" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64"><path d="M43 13H26c-7 0-11.5 4.6-11.5 10.5S19 34 26 34h12c7 0 11.5 4.4 11.5 10S45 54 38 54H11" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M43 13H26c-7 0-11.5 4.6-11.5 10.5S19 34 26 34h12c7 0 11.5 4.4 11.5 10S45 54 38 54H11" fill="none" stroke="#000" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><path d="M43 13H26c-7 0-11.5 4.6-11.5 10.5S19 34 26 34h12c7 0 11.5 4.4 11.5 10S45 54 38 54H11" fill="none" stroke="url(#sr-g)" stroke-opacity=".35" stroke-width="17" stroke-dasharray="2.6 4.4" stroke-linejoin="round"/><rect width="64" height="64" fill="url(#sr-g)" mask="url(#sr-rails)"/><path d="M41 4.5 57.5 13 41 21.5Z" fill="url(#sr-g)"/></svg></div>
+      <div class="mark" aria-hidden="true"><svg viewBox="0 0 120 120"><rect width="120" height="120" rx="28" fill="#12233D"/><path d="M 90 32 H 46 A 14 14 0 0 0 46 60 H 74 A 14 14 0 0 1 74 88 H 30" fill="none" stroke="#FFFFFF" stroke-width="14"/><path d="M 90 32 H 46 A 14 14 0 0 0 46 60 H 74 A 14 14 0 0 1 74 88 H 30" fill="none" stroke="#12233D" stroke-width="6"/><path d="M 90 32 H 46 A 14 14 0 0 0 46 60 H 74 A 14 14 0 0 1 74 88 H 30" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-dasharray="2.5 5.5"/><circle cx="91" cy="32" r="9" fill="#F2A93B" stroke="#12233D" stroke-width="3"/><circle cx="29" cy="88" r="11" fill="#2F6BFF" stroke="#12233D" stroke-width="3"/><path d="M 24 88 L 27.5 91.5 L 34 84.5" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <div style="min-width:0">
         <h1 id="title">StoryRail</h1>
         <p class="tag">From user story to green CI</p>
@@ -453,7 +453,7 @@ svg.wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-eve
   <section class="squad" id="view-squad" role="tabpanel" aria-labelledby="tab-squad" hidden>
     <div class="stage" aria-live="polite">
       <h2 id="stage-title">Working now</h2>
-      <div class="stage-list" id="stage-list"><p class="stage-empty">The squad is waiting for a story. Start one with /storyrail &lt;issue&gt;.</p></div>
+      <div class="stage-list" id="stage-list"><p class="stage-empty waiting"><svg class="rails-art" viewBox="0 0 120 112" aria-hidden="true"><line x1="20.0" y1="108.0" x2="54.0" y2="46.0" stroke="currentColor" stroke-width="5.0" stroke-linecap="round"/><line x1="100.0" y1="108.0" x2="66.0" y2="46.0" stroke="currentColor" stroke-width="5.0" stroke-linecap="round"/><line x1="22.0" y1="100.0" x2="98.0" y2="100.0" stroke="currentColor" stroke-width="4.0" stroke-linecap="round"/><line x1="29.0" y1="86.0" x2="91.0" y2="86.0" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><line x1="36.0" y1="74.0" x2="84.0" y2="74.0" stroke="currentColor" stroke-width="3.0" stroke-linecap="round"/><line x1="41.0" y1="64.0" x2="79.0" y2="64.0" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><line x1="46.0" y1="56.0" x2="74.0" y2="56.0" stroke="currentColor" stroke-width="2.0" stroke-linecap="round"/><rect x="40.0" y="10.0" width="40" height="30" rx="5" fill="#2F6BFF"/><line x1="47.0" y1="19.0" x2="70.0" y2="19.0" stroke="#FFFFFF" stroke-width="3.0" stroke-linecap="round"/><line x1="47.0" y1="26.0" x2="64.0" y2="26.0" stroke="#FFFFFF" stroke-width="3.0" stroke-linecap="round"/><line x1="47.0" y1="33.0" x2="58.0" y2="33.0" stroke="#FFFFFF" stroke-width="3.0" stroke-linecap="round"/><circle cx="72.0" cy="32.0" r="4" fill="#F2A93B"/></svg><span>The squad is waiting for a story. Start one with /storyrail &lt;issue&gt;.</span></p></div>
     </div>
     <div class="roster-head">
       <h2>The squad</h2>
@@ -745,6 +745,7 @@ function memberStations(m){ const apps=run.apps||[]; return (m.stations||[]).fla
 function memberOf(station){ return station==="orchestrator"?squad.find(m=>m.kind==="lead"):squad.find(m=>memberStations(m).includes(station)); }
 const SAY={pending:"Waiting for an earlier step",running:"Working",done:"Done",failed:"Needs attention",waiting:"Waiting on you",skipped:"Not needed this run",outside:"Outside StoryRail"};
 const STATUS_ICON={done:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',failed:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 6v8M12 18h.01"/></svg>',waiting:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M12 6v8M12 18h.01"/></svg>'};
+const RAILS_ART='<svg class="rails-art" viewBox="0 0 120 112" aria-hidden="true"><line x1="20.0" y1="108.0" x2="54.0" y2="46.0" stroke="currentColor" stroke-width="5.0" stroke-linecap="round"/><line x1="100.0" y1="108.0" x2="66.0" y2="46.0" stroke="currentColor" stroke-width="5.0" stroke-linecap="round"/><line x1="22.0" y1="100.0" x2="98.0" y2="100.0" stroke="currentColor" stroke-width="4.0" stroke-linecap="round"/><line x1="29.0" y1="86.0" x2="91.0" y2="86.0" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/><line x1="36.0" y1="74.0" x2="84.0" y2="74.0" stroke="currentColor" stroke-width="3.0" stroke-linecap="round"/><line x1="41.0" y1="64.0" x2="79.0" y2="64.0" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><line x1="46.0" y1="56.0" x2="74.0" y2="56.0" stroke="currentColor" stroke-width="2.0" stroke-linecap="round"/><rect x="40.0" y="10.0" width="40" height="30" rx="5" fill="#2F6BFF"/><line x1="47.0" y1="19.0" x2="70.0" y2="19.0" stroke="#FFFFFF" stroke-width="3.0" stroke-linecap="round"/><line x1="47.0" y1="26.0" x2="64.0" y2="26.0" stroke="#FFFFFF" stroke-width="3.0" stroke-linecap="round"/><line x1="47.0" y1="33.0" x2="58.0" y2="33.0" stroke="#FFFFFF" stroke-width="3.0" stroke-linecap="round"/><circle cx="72.0" cy="32.0" r="4" fill="#F2A93B"/></svg>';
 let squad=[], engine="records", byStation={}, openId=null, lastFocus=null, chatCache={};
 
 function memberState(m){
@@ -798,7 +799,8 @@ function renderSquad(){
   $("stage-title").textContent=waiting.length&&!active.length?"Needs you now":"Working now";
   if(!shown.length){
     const p=document.createElement("p"); p.className="stage-empty";
-    p.textContent=run.endedAt?"This run is finished. Start the next story with /storyrail <issue>.":run.startedAt?"Between steps. "+((squad.find(x=>x.kind==="lead")||{}).name||"The orchestrator")+", the orchestrator, is handing over the next task.":"The squad is waiting for a story. Start one with /storyrail <issue>.";
+    if(!run.startedAt){ p.classList.add("waiting"); p.innerHTML=RAILS_ART; const t=document.createElement("span"); p.append(t); }
+    (p.querySelector("span")||p).textContent=run.endedAt?"This run is finished. Start the next story with /storyrail <issue>.":run.startedAt?"Between steps. "+((squad.find(x=>x.kind==="lead")||{}).name||"The orchestrator")+", the orchestrator, is handing over the next task.":"The squad is waiting for a story. Start one with /storyrail <issue>.";
     list.append(p);
   }
   shown.forEach(([m,ms])=>{
