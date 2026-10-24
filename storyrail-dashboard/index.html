@@ -601,7 +601,7 @@ function renderRun(){
   const iss=run.issues; if(Array.isArray(iss)&&iss.length){ const box=$("issues"); box.innerHTML="";
     iss.forEach(n=>{ const d=document.createElement("div"); d.className="issue";
       const kk=document.createElement("span"); kk.className="k"; kk.textContent="Issue #"+n; d.append(kk);
-      const a=document.createElement(run.repo?"a":"span"); if(run.repo){a.href=run.repo+"/-/issues/"+n;a.target="_blank";a.rel="noopener";a.textContent="Open in GitLab";} else {a.className="t";a.textContent="#"+n;} d.append(a); box.append(d); }); }
+      const a=document.createElement(run.repo?"a":"span"); if(run.repo){ const gh=/^https:\/\/github\.com\//.test(run.repo); a.href=run.repo+(gh?"/issues/":"/-/issues/")+n;a.target="_blank";a.rel="noopener";a.textContent=gh?"Open in GitHub":"Open in GitLab";} else {a.className="t";a.textContent="#"+n;} d.append(a); box.append(d); }); }
 }
 function renderFeed(items){
   const ul=$("feed"); if(!items||!items.length) return; ul.innerHTML="";

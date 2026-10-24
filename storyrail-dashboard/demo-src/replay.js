@@ -52,7 +52,7 @@
   let start=0, next=0, feed=[];
   function reset(){
     state=Object.fromEntries(STATIONS.map(s=>[s,{status:"pending",progress:0,note:""}]));
-    run={issues:[51],title:"Task info on the screen",repo:"https://gitlab.example.com/insu/backlog",phase:"Requirements",startedAt:new Date().toISOString(),metrics:{}};
+    run={issues:[51],title:"Task info on the screen",repo:"https://github.com/storyrail-squad/squad-backlog",phase:"Requirements",startedAt:new Date().toISOString(),metrics:{}};
     feed=[]; next=0; start=performance.now(); feedSeen.clear(); $("feed").innerHTML="";
     ["k-unit","k-api","k-ui","k-rev","k-sec"].forEach(id=>{ $(id).textContent="—"; }); ["kb-unit","kb-api","kb-ui","kb-rev","kb-sec"].forEach(id=>bar(id,0)); $("findings").hidden=true;
     Object.values(chatCache).forEach(c=>{ c.chat=[]; });

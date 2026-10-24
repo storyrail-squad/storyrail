@@ -724,7 +724,7 @@ function renderRun(){
   const iss=run.issues; if(Array.isArray(iss)&&iss.length){ const box=$("issues"); box.innerHTML="";
     iss.forEach(n=>{ const d=document.createElement("div"); d.className="issue";
       const kk=document.createElement("span"); kk.className="k"; kk.textContent="Issue #"+n; d.append(kk);
-      const a=document.createElement(run.repo?"a":"span"); if(run.repo){a.href=run.repo+"/-/issues/"+n;a.target="_blank";a.rel="noopener";a.textContent="Open in GitLab";} else {a.className="t";a.textContent="#"+n;} d.append(a); box.append(d); }); }
+      const a=document.createElement(run.repo?"a":"span"); if(run.repo){ const gh=/^https:\/\/github\.com\//.test(run.repo); a.href=run.repo+(gh?"/issues/":"/-/issues/")+n;a.target="_blank";a.rel="noopener";a.textContent=gh?"Open in GitHub":"Open in GitLab";} else {a.className="t";a.textContent="#"+n;} d.append(a); box.append(d); }); }
 }
 function renderFeed(items){
   const ul=$("feed"); if(!items||!items.length) return; ul.innerHTML="";
@@ -1275,7 +1275,7 @@ if(document.fonts) document.fonts.ready.then(drawWires);
   let start=0, next=0, feed=[];
   function reset(){
     state=Object.fromEntries(STATIONS.map(s=>[s,{status:"pending",progress:0,note:""}]));
-    run={issues:[51],title:"Task info on the screen",repo:"https://gitlab.example.com/insu/backlog",phase:"Requirements",startedAt:new Date().toISOString(),metrics:{}};
+    run={issues:[51],title:"Task info on the screen",repo:"https://github.com/storyrail-squad/squad-backlog",phase:"Requirements",startedAt:new Date().toISOString(),metrics:{}};
     feed=[]; next=0; start=performance.now(); feedSeen.clear(); $("feed").innerHTML="";
     ["k-unit","k-api","k-ui","k-rev","k-sec"].forEach(id=>{ $(id).textContent="—"; }); ["kb-unit","kb-api","kb-ui","kb-rev","kb-sec"].forEach(id=>bar(id,0)); $("findings").hidden=true;
     Object.values(chatCache).forEach(c=>{ c.chat=[]; });
