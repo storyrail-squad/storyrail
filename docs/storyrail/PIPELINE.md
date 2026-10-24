@@ -42,6 +42,13 @@ For bugs the testers log in GitLab after testing in QA. Same rail, only the affe
 5. Merge request (`Fixes #<bug>`), your OK, merge, CI on the default branch green.
 6. The bug is commented "ready for re-test in QA" and labelled; the testers re-test it after the CDD deployment.
 
+## Exams (`/storyrail eval <baseline|tool|change>`)
+
+Not part of a story run: a check on the squad itself. The squad builds the practice stories in `evals/` (steps 1–6 of the
+rail, from frozen commits of their applications, several runs each, nothing pushed) and hidden tests grade every run. The
+result is compared with the previous exam (the first one with the targets): **keep** a change, **roll it back**, or after
+a Bob update, **raise it with IBM** with the exam as evidence. Details: [evals/README.md](../../evals/README.md).
+
 ## Where things are
 
 | What | Where |
@@ -56,5 +63,6 @@ For bugs the testers log in GitLab after testing in QA. Same rail, only the affe
 | GitLab from the agents | `node scripts/storyrail-gitlab.mjs` (token) or the GitLab MCP server |
 | Local clones of the apps | `projects/<frontend|backend>/<app>` (made by discovery; `storyrail-apps.mjs sync <N>` updates them) |
 | Output of one run | `runs/issue-<N>/` |
+| Exams: practice stories, hidden tests, results | `evals/` (`node scripts/storyrail-eval.mjs list`) |
 | Live dashboard | `node scripts/storyrail-dashboard.mjs` → http://localhost:4800 |
 | Setup on a new machine | [SETUP.md](SETUP.md) |

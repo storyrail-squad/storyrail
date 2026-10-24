@@ -3,3 +3,6 @@
 .env.*
 **/*.pem
 **/*.key
+
+# The answer key of the exams (evals/README.md): agents must never see it.
+evals/hidden/

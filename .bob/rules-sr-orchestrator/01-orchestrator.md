@@ -19,6 +19,7 @@ The `/storyrail` command passes you the arguments:
 
 - `status` → run `node scripts/storyrail-status.mjs show` and `node scripts/storyrail-apps.mjs status <N>`, summarise where the run is, stop.
 - `fix <n> [<n> ...]` → **Defect loop** (section D) for those bug issues.
+- `eval <baseline|tool|change> [what changed]` → **Exam** (section E): the squad builds the practice stories in `evals/` and hidden tests grade it.
 - one or more issue numbers → **Story run** (sections A and B).
 - nothing → ask the user for an issue number. Never pick one yourself.
 
@@ -205,6 +206,51 @@ The testers found a defect in QA and logged it as a bug issue in GitLab. Same ra
 4. Step 7 for those apps; mention `Fixes #B` (with the backlog project) in each MR description.
 5. Finish as above, with the comment "Fixed in <MR links>, CI green; ready for re-test in QA after the CDD deployment"
    and the ready label. The testers re-test and close the bug.
+
+## E. Exam (`/storyrail eval <baseline|tool|change> [what changed]`)
+
+Evaluation-driven development: before you trust a change to the squad (a Bob update by IBM, an edited mode, rule, house
+standard or MCP server), the squad takes the same exam as before and the scores are compared. Background:
+[evals/README.md](../../evals/README.md).
+
+- **What is graded:** the practice stories in `evals/evals.json`, built from frozen commits of their applications, each
+  `runsPerStory` times. Hidden tests in `evals/hidden/` grade every run. **Never open, list, search or quote anything under
+  `evals/hidden/`**, never run a command that prints it, and never pass it to a mode or subagent: the answer key must stay
+  unseen (`.bobignore` blocks Bob's file tools too).
+- **Nothing leaves the machine:** no push, no merge request, no merge, no GitLab comment or label. Exam branches
+  (`eval/…`) stay local. A scanner with `mode: ci` is skipped in an exam (it would need a pushed branch); say so in the scan report.
+
+1. **Prerequisites** as A.1 (`whoami`, clean hub, reference apps), dashboard as A.2, then
+   `node scripts/storyrail-eval.mjs validate`. It must say `ok` (a `TODO(office)` left means the practice stories aren't
+   ready: tell the user and stop). `reason` = `baseline` (first exam, or after the targets or stories changed), `tool`
+   (IBM updated Bob, your setup unchanged) or `change` (a mode, rule, house standard, MCP server or setting changed: name
+   it). If unclear, **ASK**.
+2. `node scripts/storyrail-eval.mjs start --reason <reason> --detail "<what changed>"`. Tell the user it takes
+   (stories × runs) story runs and that the dashboard shows an EVAL banner meanwhile.
+3. For each story `S` in `evals.json`, for run `k` = 1 … `runsPerStory`:
+   1. `node scripts/storyrail-eval.mjs prepare S k`: finds and clones the story's applications (apps.json in the run
+      folder `runs/issue-eval-<exam>-S-r<k>/`), puts each one on its frozen commit on a local exam branch, copies the
+      story to `story.md` there and shows the banner. N for this run = `eval-<exam>-S-r<k>`.
+   2. Run **B.1 to B.6** exactly as for a real story, with these differences:
+      - sr-req-fetch gets mode `eval` and the run folder; it doesn't run `discover` again (apps.json is there).
+      - Skip the branch step of B.1 (`storyrail-apps.mjs branch`): each app is already on its exam branch.
+        `node scripts/storyrail-status.mjs apps N` as usual, so the dashboard draws the lanes.
+      - **No questions to the user.** The story's "Answers the squad already has" answers refinement questions. If a
+        mode still needs a decision, decide from the story, note it in the run folder, and count **1 human intervention**
+        each time the run needed you; only a hard stop (a gate failed twice) is asked, and it counts too.
+      - Every subtask and subagent starts fresh for every run: that is what makes runs comparable.
+      - Commit on the exam branch in each app after each stage, as usual; never push.
+      - Note for the grade: **major** = blocker + major findings of the round-1 review and scans; **rounds** = fix rounds run.
+   3. `node scripts/storyrail-eval.mjs grade S k --major <n> --rounds <n> --human <n>`: it starts the backends from the
+      run's code (`services` in evals.json), runs the hidden tests and records the result. One line to the user:
+      `S run k: <passed>/<tests> hidden tests`.
+4. `node scripts/storyrail-eval.mjs finish`: verdict against the previous exam (or the targets for a baseline), apps
+   back on their branches, banner off. Show the verdict to the user as it prints.
+5. Commit `evals/results/<exam>.json` and the exam's run folders in the hub on a branch `eval/<exam>`, push it and open a
+   merge request (`gitlab mr-create hub eval/<exam> "Exam <exam>"`): the result is what the next exam compares with.
+   The Evals tab on the dashboard shows the history.
+6. Verdict **worse** after a `change` → recommend reverting it; after a `tool` update → recommend raising it with IBM,
+   with the exam as evidence. Never edit the hidden tests or the targets to make an exam pass.
 
 ## Finish
 

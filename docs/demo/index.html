@@ -327,7 +327,7 @@ svg.wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-eve
   #orch .round text{font-size:17px}
 }
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-/* Evals view (demo, mock data) */
+/* Evals view: exams of the squad */
 :root{--s1:#1f6fd6;--s2:#c96a1a;--s3:#14958f}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--s1:#5a92ea;--s2:#c97a34;--s3:#22a39c}}
 :root[data-theme="dark"]{--s1:#5a92ea;--s2:#c97a34;--s3:#22a39c}
@@ -355,12 +355,12 @@ svg.wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-eve
 .ev-verdict.same{background:var(--bg);border-color:var(--line)} .ev-verdict.same .ic{background:var(--muted)}
 .ev-verdict b{font-family:var(--f-display);font-size:1.02rem;display:block}
 .ev-verdict p{margin:2px 0 0;font-size:.9rem}
-.ev-setups{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+
 .ev-setup{background:var(--canvas);border:1px solid var(--line);border-radius:14px;padding:14px 16px;border-top:4px solid var(--c)}
-.ev-setup .nm{font:800 .95rem var(--f-display)} .ev-setup .sub{color:var(--muted);font-size:.82rem}
-.ev-setup .big{font:800 2rem var(--f-display);margin:6px 0 0;line-height:1} .ev-setup .big small{font:500 .85rem var(--f-body);color:var(--muted);margin-left:6px}
-.ev-setup dl{display:grid;grid-template-columns:1fr auto;gap:3px 10px;margin:10px 0 0;font-size:.86rem}
-.ev-setup dt{color:var(--muted)} .ev-setup dd{margin:0;font-weight:700;text-align:right}
+
+
+
+
 .ev-table{width:100%;border-collapse:collapse;font-size:.9rem}
 .ev-table th{text-align:left;font:600 .74rem var(--f-mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--line)}
 .ev-table td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -406,6 +406,8 @@ svg.wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-eve
 .ev-head p{margin:0}
 @media (max-width:900px){.ev-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:520px){.ev-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.eval-banner{margin:0 0 12px;padding:8px 14px;border-radius:12px;border:1px dashed var(--ci);background:var(--ci-soft);color:var(--ci);font:700 .82rem var(--f-mono);overflow-wrap:anywhere}
+.ev-card code{font:600 .85em var(--f-mono)}
 </style>
 </head>
 <body>
@@ -449,6 +451,7 @@ svg.wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-eve
     <button role="tab" id="tab-flow" aria-controls="view-flow" aria-selected="false" tabindex="-1">Flow</button>
     <button role="tab" id="tab-evals" aria-controls="view-evals" aria-selected="false" tabindex="-1">Evals</button>
   </div>
+  <p class="eval-banner" id="eval-banner" role="status" hidden></p>
 
   <section class="squad" id="view-squad" role="tabpanel" aria-labelledby="tab-squad" hidden>
     <div class="stage" aria-live="polite">
@@ -483,6 +486,51 @@ svg.wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-eve
     </div>
   </section>
 
+  <section class="evals" id="view-evals" role="tabpanel" aria-labelledby="tab-evals" hidden>
+    <div class="ev-card">
+      <div class="ev-head">
+        <h2>Is the squad still as good as before?</h2>
+        <span class="ev-mock" id="ev-mock" hidden>Sample data · example timeline</span>
+      </div>
+      <p class="ev-muted" style="margin-top:6px" id="ev-intro">An exam you start yourself with <code>/storyrail eval</code>: after an AI tool update, or when you change a brief, a rule or a skill. Your real user stories still run once, as usual.</p>
+      <ol class="ev-steps">
+        <li><b>Fixed practice stories</b>Kept apart from the backlog. Always the same, always built from the same frozen code.</li>
+        <li><b>Hidden tests</b>An answer key per story that the agents never see, so they can't grade themselves.</li>
+        <li><b>Several runs each</b><span id="ev-runs-text">The full squad runs every story 3 times.</span> Nothing is pushed, merged or deployed.</li>
+        <li><b>Compare</b>The first exam is checked against your targets. Every later exam is compared with the one before, so a drop shows straight away.</li>
+      </ol>
+      <div class="ev-banner">While an exam runs, the other tabs show it live with this banner: <span>EVAL · E1 · run 2 of 3 · nothing is merged or deployed</span></div>
+    </div>
+    <div class="ev-card" id="ev-empty" hidden>
+      <h3>No exams yet</h3>
+      <p class="ev-muted">Take the first one, the baseline, with <code>/storyrail eval baseline</code>. Its results land in <code>evals/results/</code> and show here.</p>
+    </div>
+    <div class="ev-card" data-ev-has>
+      <div class="ev-compare">
+        <label>Exam <select id="ev-a"></select></label>
+        <label id="ev-b-wrap">compared with <select id="ev-b"></select></label>
+        <span id="ev-b-first" class="ev-muted" hidden>compared with your targets (a baseline is never compared with an earlier exam)</span>
+      </div>
+      <div class="ev-verdict" id="ev-verdict" aria-live="polite"></div>
+    </div>
+    <div class="ev-card" data-ev-has>
+      <div class="ev-head"><h3 id="ev-setup-title">Your squad</h3><p id="ev-setup-sub"></p></div>
+      <div class="ev-stats" id="ev-stats"></div>
+    </div>
+    <div class="ev-card" data-ev-has>
+      <h3>Scoreboard: hidden tests passed per practice story</h3>
+      <p class="ev-muted" style="margin:-4px 0 8px">Each bar is one run. Bars of the same height mean a consistent squad. Select a story for the details.</p>
+      <div style="overflow-x:auto"><table class="ev-table" id="ev-board"></table></div>
+      <div class="ev-detail" id="ev-detail"></div>
+    </div>
+    <div class="ev-card" data-ev-has>
+      <h3>History: hidden tests passed at each exam</h3>
+      <p class="ev-muted" style="margin:-4px 0 8px">Dashed lines mark what changed before an exam. Hover a point for the details.</p>
+      <div class="ev-chart" id="ev-chart"><div class="ev-tip" id="ev-tip" role="status"></div></div>
+      <details><summary>Show as a table</summary><div style="overflow-x:auto"><table class="ev-table" id="ev-histtable"></table></div></details>
+    </div>
+  </section>
+
   <div class="lower">
     <section class="side" aria-label="Activity">
       <h2>Activity log</h2>
@@ -500,46 +548,6 @@ svg.wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-eve
       </div>
     </section>
   </div>
-  <section class="evals" id="view-evals" role="tabpanel" aria-labelledby="tab-evals" hidden>
-    <div class="ev-card">
-      <div class="ev-head">
-        <h2>Is the squad still as good as before?</h2>
-        <span class="ev-mock">Sample data · example timeline</span>
-      </div>
-      <p class="ev-muted" style="margin-top:6px">An exam you start yourself: after a Bob update, or when you change a brief or a rule. Your real user stories still run once, as usual.</p>
-      <ol class="ev-steps">
-        <li><b>Fixed practice stories</b>Two stories kept apart from the backlog. Always the same, always from the same frozen code.</li>
-        <li><b>Hidden tests</b>An answer key per story that the agents never see, so they can't grade themselves.</li>
-        <li><b>Three runs each</b>The full squad runs every story 3 times. Nothing is merged or deployed.</li>
-        <li><b>Compare</b>The first exam is checked against your targets. Every later exam is compared with the one before, so a drop shows straight away.</li>
-      </ol>
-      <div class="ev-banner">While an exam runs, the Orchestration and Squad tabs show it live with this banner: <span>EVAL · E1 Loan history · run 2 of 3 · no merge, no deploy</span></div>
-    </div>
-    <div class="ev-card">
-      <div class="ev-compare">
-        <label>Exam <select id="ev-a"></select></label>
-        <label id="ev-b-wrap">compared with <select id="ev-b"></select></label>
-        <span id="ev-b-first" class="ev-muted" hidden>compared with your targets (first exam: nothing earlier to compare with)</span>
-      </div>
-      <div class="ev-verdict" id="ev-verdict" aria-live="polite"></div>
-    </div>
-    <div class="ev-card">
-      <div class="ev-head"><h3 id="ev-setup-title">Your squad</h3><p id="ev-setup-sub"></p></div>
-      <div class="ev-stats" id="ev-stats"></div>
-    </div>
-    <div class="ev-card">
-      <h3>Scoreboard: hidden tests passed per practice story</h3>
-      <p class="ev-muted" style="margin:-4px 0 8px">Each bar is one run. Bars of the same height mean a consistent squad. Select a story for the details.</p>
-      <div style="overflow-x:auto"><table class="ev-table" id="ev-board"></table></div>
-      <div class="ev-detail" id="ev-detail"></div>
-    </div>
-    <div class="ev-card">
-      <h3>History: hidden tests passed at each exam</h3>
-      <p class="ev-muted" style="margin:-4px 0 8px">Dashed lines mark what changed before an exam. Hover a point for the details.</p>
-      <div class="ev-chart" id="ev-chart"><div class="ev-tip" id="ev-tip" role="status"></div></div>
-      <details><summary>Show as a table</summary><div style="overflow-x:auto"><table class="ev-table" id="ev-histtable"></table></div></details>
-    </div>
-  </section>
   <div class="scrim" id="scrim" hidden></div>
   <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="d-name" hidden>
     <header>
@@ -565,6 +573,102 @@ svg.wires{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-eve
   <p class="foot">Demo replay of a sample run, on a loop. In a real run the agents report through <code>scripts/storyrail-status.mjs</code> and the local dashboard updates every 1.5 s.</p>
 </main>
 
+<script>
+/* StoryRail exams (evaluation-driven development): the numbers and the verdict.
+   One file for both sides: the dashboard loads it as a script, scripts/storyrail-eval.mjs requires it,
+   so the page and the terminal always say the same thing.
+
+   An exam result (evals/results/<id>.json):
+   { id, date, reason: "baseline" | "tool" | "change", label, detail,
+     stories: { E1: { title, tests, runs: [ { run, passed, major, rounds, human, minutes } ] } } }
+*/
+(function (root) {
+  const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+
+  /** Totals over every run of every story in one exam. */
+  function stats(exam) {
+    let passed = 0, total = 0;
+    const spreads = [], major = [], rounds = [], human = [], mins = [];
+    Object.values(exam.stories || {}).forEach((st) => {
+      const runs = st.runs || [];
+      if (!runs.length) return;
+      runs.forEach((r) => { passed += r.passed; total += st.tests; major.push(r.major); rounds.push(r.rounds); human.push(r.human); mins.push(r.minutes); });
+      const p = runs.map((r) => (r.passed / st.tests) * 100);
+      spreads.push(Math.max(...p) - Math.min(...p));
+    });
+    return { pct: total ? (passed / total) * 100 : 0, passed, total, spread: avg(spreads), major: avg(major), rounds: avg(rounds),
+      human: human.reduce((a, b) => a + b, 0), mins: avg(mins), runs: major.length };
+  }
+
+  /** [class, icon, headline, detail]: class is keep | worse | same. `cfg` = evals.json (targets, setup, compare). */
+  function verdict(A, B, cfg) {
+    const a = stats(A), T = cfg.targets, drop = (cfg.compare && cfg.compare.dropPts) || 2;
+    const tool = (cfg.setup && cfg.setup.tool) || 'the AI tool';
+    if (!B) {
+      const ok = a.pct >= T.hiddenPassPct && a.spread <= T.spreadPts && a.major <= T.majorPerRun && a.human <= T.humanInterventions;
+      const facts = 'Hidden tests ' + a.pct.toFixed(0) + '% (target ≥ ' + T.hiddenPassPct + '%) · spread between runs ' + a.spread.toFixed(0) +
+        ' pts (≤ ' + T.spreadPts + ') · major findings ' + a.major.toFixed(1) + ' per run (≤ ' + T.majorPerRun + ') · human interventions ' +
+        a.human + ' (target ' + T.humanInterventions + ').';
+      return ok ? ['keep', '✓', 'First exam: it meets your targets and becomes the baseline.', 'There is nothing earlier to compare with, so it is checked against the targets you set. ' + facts]
+                : ['worse', '!', 'First exam: below your targets. Fix the setup before you rely on it.', facts];
+    }
+    if (A.id === B.id) return ['same', '=', 'Pick two different exams to compare.', ''];
+    const b = stats(B), d = a.pct - b.pct, steadier = a.spread <= b.spread + 2;
+    const facts = 'Hidden tests ' + b.pct.toFixed(0) + '% → ' + a.pct.toFixed(0) + '% · spread between runs ' + b.spread.toFixed(0) + ' → ' +
+      a.spread.toFixed(0) + ' points · major findings ' + b.major.toFixed(1) + ' → ' + a.major.toFixed(1) + ' per run · human interventions ' + b.human + ' → ' + a.human + '.';
+    if (A.reason === 'tool') {
+      if (d <= -drop) return ['worse', '!', 'Score dropped after the ' + tool + ' update. Your setup didn\'t change, so the update is the cause.', ((cfg.setup && cfg.setup.toolAdvice) || 'Keep this exam as evidence.') + ' ' + facts];
+      return ['keep', '✓', 'The ' + tool + ' update is safe: same quality as before.', facts];
+    }
+    if (d <= -drop) return ['worse', '!', 'Roll the change back: the squad got worse.', facts];
+    if (d >= drop || (d > -drop && steadier && a.major <= b.major)) return ['keep', '✓', 'Keep the change: the squad is as good or better.', facts];
+    return ['same', '=', 'No clear difference.', facts];
+  }
+
+  /** The exam an exam is compared with: the one just before it (null for the first). */
+  function previous(exams, exam) {
+    const sorted = exams.slice().sort((x, y) => String(x.id).localeCompare(String(y.id)));
+    const i = sorted.findIndex((e) => e.id === exam.id);
+    return i > 0 ? sorted[i - 1] : null;
+  }
+
+  const api = { stats, verdict, previous, avg };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.StoryRailEvals = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+</script>
+<script>
+/* Demo: sample exams for the Evals tab, in the same shape as evals/results/*.json (the live dashboard reads those). */
+(() => {
+  const run = (k, passed, major, rounds, human, minutes) => ({ run: k, passed, major, rounds, human, minutes });
+  const exam = (id, date, reason, label, detail, e1, e2) => ({ id, date, reason, label, detail, finishedAt: date,
+    stories: { E1: { title: 'A new task field through the facade', tests: 11, runs: e1.map((r, i) => run(i + 1, ...r)) },
+               E2: { title: 'The task screen shows the new field', tests: 11, runs: e2.map((r, i) => run(i + 1, ...r)) } } });
+  window.__EVALS__ = {
+    sample: true,
+    config: {
+      setup: { name: 'IBM Bob + house standards + Figma MCP', tool: 'IBM Bob', toolAdvice: 'Raise it with IBM and attach this exam as evidence.' },
+      runsPerStory: 3,
+      targets: { hiddenPassPct: 90, spreadPts: 10, majorPerRun: 0.5, humanInterventions: 0 },
+      compare: { dropPts: 2 },
+      stories: [
+        { id: 'E1', title: 'A new task field through the facade', kind: 'Story', lanes: ['INSU-ta01', 'INSU-fa01'], tests: 11, why: 'Two backends that call each other: contract first, provider stubbed, error mapping' },
+        { id: 'E2', title: 'The task screen shows the new field', kind: 'Story', lanes: ['INSU-sp01'], tests: 11, why: 'Frontend only: Screen document, Figma frame and Storybook components' },
+      ],
+    },
+    exams: [
+      exam('2026-10-21-0900', '2026-10-21T09:00:00Z', 'baseline', 'Baseline', 'First exam, before the demo',
+        [[11, 0, 1, 0, 41], [10, 1, 1, 0, 44], [11, 0, 1, 0, 40]], [[11, 0, 1, 0, 22], [11, 0, 1, 0, 21], [10, 0, 1, 0, 24]]),
+      exam('2026-11-04-0900', '2026-11-04T09:00:00Z', 'tool', 'Bob update', 'Bob updated by IBM (version 2.2)',
+        [[11, 0, 1, 0, 39], [11, 0, 1, 0, 41], [10, 0, 1, 0, 42]], [[11, 0, 1, 0, 21], [11, 0, 1, 0, 22], [11, 0, 1, 0, 21]]),
+      exam('2026-11-18-0900', '2026-11-18T09:00:00Z', 'change', 'Rules change', 'Frontend developer rules: check every Storybook prop before use',
+        [[11, 0, 1, 0, 38], [11, 0, 1, 0, 39], [11, 0, 1, 0, 37]], [[11, 0, 1, 0, 21], [11, 0, 1, 0, 20], [11, 0, 1, 0, 21]]),
+      exam('2026-12-02-0900', '2026-12-02T09:00:00Z', 'tool', 'Bob update', 'Bob updated by IBM (version 2.3)',
+        [[9, 2, 2, 1, 52], [10, 1, 1, 0, 45], [8, 2, 2, 1, 56]], [[10, 1, 1, 0, 26], [11, 0, 1, 0, 23], [9, 1, 2, 0, 28]]),
+    ],
+  };
+})();
+</script>
 <script>
 (function(){
 const STEPS=[["Requirements","1","1"],["Build","2","2"],["Isolated tests","3","3"],["Review + scans","4","4"],["Fix","5","5"],["Merge + CI","7","6"],["After StoryRail: the team","","7 / 9"]];
@@ -1059,143 +1163,136 @@ function setTheme(pick,save){
 document.querySelectorAll("[data-theme-pick]").forEach(b=>b.addEventListener("click",()=>setTheme(b.dataset.themePick,true)));
 setTheme(document.documentElement.dataset.theme||"system",false);
 
-/* ---------- Evals view (demo, mock data): one setup, an exam after each change ---------- */
-const EV={
-  // pass marks you set once; the first exam (the baseline) is judged against these, later exams against the exam before
-  targets:{pct:90,spread:10,major:0.5,human:0},
-  setup:{name:"IBM Bob + house standards + Figma MCP",sub:"The only setup you run. Every exam uses the same two practice stories."},
-  stories:[
-    {id:"E1",title:"Loan history for a book",kind:"Story",lanes:"Frontend + backend",tests:20,why:"Figma screen with Storybook components; backend follows the reference app"},
-    {id:"E2",title:"ISBN check digit accepts wrong values",kind:"Bug",lanes:"Backend",tests:12,why:"Backend bug fix with a regression test, reference-app patterns"}],
-  // each exam: why it ran, and 3 runs per story of [hidden tests passed, major findings, fix rounds, human interventions, minutes]
-  exams:[
-    {id:"x1",date:"21 Oct",reason:"baseline",label:"Baseline",detail:"First exam, before the demo",
-      runs:{E1:[[20,0,1,0,40],[19,1,1,0,43],[20,0,1,0,39]],E2:[[12,0,1,0,19],[12,0,1,0,19],[11,0,1,0,21]]}},
-    {id:"x2",date:"4 Nov",reason:"bob",label:"Bob update",detail:"Bob updated by IBM (version 2.2)",
-      runs:{E1:[[20,0,1,0,38],[20,0,1,0,40],[19,0,1,0,41]],E2:[[12,0,1,0,18],[12,0,1,0,19],[12,0,1,0,18]]}},
-    {id:"x3",date:"18 Nov",reason:"change",label:"Brief change",detail:"Frontend developer brief: check every Storybook prop before use",
-      runs:{E1:[[20,0,1,0,37],[20,0,1,0,38],[20,0,1,0,36]],E2:[[12,0,1,0,18],[12,0,1,0,19],[12,0,1,0,18]]}},
-    {id:"x4",date:"2 Dec",reason:"bob",label:"Bob update",detail:"Bob updated by IBM (version 2.3)",
-      runs:{E1:[[17,2,2,1,52],[19,1,1,0,44],[16,2,2,1,55]],E2:[[11,1,1,0,24],[12,0,1,0,21],[10,1,2,0,27]]}}]
-};
-const evAvg=a=>a.reduce((x,y)=>x+y,0)/a.length;
-function evStats(ex){
-  let passed=0,total=0; const spreads=[],major=[],rounds=[],human=[],mins=[];
-  EV.stories.forEach(st=>{ const runs=ex.runs[st.id];
-    runs.forEach(r=>{ passed+=r[0]; total+=st.tests; major.push(r[1]); rounds.push(r[2]); human.push(r[3]); mins.push(r[4]); });
-    const p=runs.map(r=>r[0]/st.tests*100); spreads.push(Math.max(...p)-Math.min(...p)); });
-  return {pct:passed/total*100,spread:evAvg(spreads),major:evAvg(major),rounds:evAvg(rounds),human:human.reduce((a,b)=>a+b,0),mins:evAvg(mins)};
+/* ---------- Evals: exams of the squad (evals/results/*.json through /api/evals; the numbers and verdicts come from evals-core.js) ---------- */
+const EVC=window.StoryRailEvals;
+let EV={config:null,exams:[]}, evSel=null, evSig="";
+const evName=ex=>new Date(ex.date).toLocaleDateString([],{day:"numeric",month:"short"})+" · "+ex.label;
+const evRuns=(ex,id)=>((ex.stories||{})[id]||{}).runs||[];
+const evPrev=A=>A.reason==="baseline"?null:EVC.previous(EV.exams,A);
+function evSetData(d){
+  const sig=JSON.stringify(d); if(sig===evSig) return; evSig=sig;
+  EV={config:d.config,exams:(d.exams||[]).filter(e=>Object.values(e.stories||{}).some(s=>(s.runs||[]).length)).sort((a,b)=>String(a.id).localeCompare(String(b.id)))};
+  const has=EV.exams.length>0;
+  $("ev-empty").hidden=has; document.querySelectorAll("[data-ev-has]").forEach(el=>{ el.hidden=!has; });
+  $("ev-mock").hidden=!d.sample;
+  const tool=(EV.config.setup||{}).tool||"AI tool";
+  $("ev-intro").textContent="An exam you start yourself with /storyrail eval: after "+(/^[aeiou]/i.test(tool)?"an ":"a ")+tool+" update, or when you change how the squad works (a brief, rule, skill or setting). Your real user stories still run once, as usual.";
+  $("ev-runs-text").textContent="The full squad runs every story "+(EV.config.runsPerStory||3)+" times.";
+  if(!has) return;
+  evSel=evSel||EV.config.stories[0].id;
+  ["ev-a","ev-b"].forEach((id,k)=>{ const sel=$(id), keep=sel.value; sel.innerHTML="";
+    EV.exams.slice().reverse().forEach(e=>{ const o=document.createElement("option"); o.value=e.id; o.textContent=evName(e)+(e.finishedAt?"":" (in progress)"); sel.append(o); });
+    const last=EV.exams[EV.exams.length-1]; const def=k===0?last:(evPrev(last)||last);
+    sel.value=EV.exams.some(e=>e.id===keep)?keep:def.id; });
+  renderEvals(); if(!$("view-evals").hidden) renderEvalChart();
 }
-const evName=ex=>ex.date+" · "+ex.label;
-let evSel="E1";
-function evVerdict(A,B,a,b){
-  if(A.reason==="baseline"){
-    const T=EV.targets, ok=a.pct>=T.pct&&a.spread<=T.spread&&a.major<=T.major&&a.human<=T.human;
-    const facts="Hidden tests "+a.pct.toFixed(0)+"% (target ≥ "+T.pct+"%) · spread between runs "+a.spread.toFixed(0)+" pts (≤ "+T.spread+") · major findings "+a.major.toFixed(1)+" per run (≤ "+T.major+") · human interventions "+a.human+" (target "+T.human+").";
-    return ok?["keep","✓","First exam: it meets your targets and becomes the baseline.","There is nothing earlier to compare with, so it is checked against the targets you set. "+facts]
-             :["worse","!","First exam: below your targets. Fix the setup before you rely on it.",facts];
-  }
-  if(A===B) return ["same","=","Pick two different exams to compare.",""];
-  const d=a.pct-b.pct, steadier=a.spread<=b.spread+2;
-  const facts="Hidden tests "+b.pct.toFixed(0)+"% → "+a.pct.toFixed(0)+"% · spread between runs "+b.spread.toFixed(0)+" → "+a.spread.toFixed(0)+" points · major findings "+b.major.toFixed(1)+" → "+a.major.toFixed(1)+" per run · human interventions "+b.human+" → "+a.human+".";
-  if(A.reason==="bob"){
-    if(d<=-2) return ["worse","!","Score dropped after a Bob update. Your setup didn't change, so raise it with IBM.","Attach this exam as evidence. "+facts];
-    return ["keep","✓","The Bob update is safe: same quality as before.",facts];
-  }
-  if(d<=-2) return ["worse","!","Roll the change back: the squad got worse.",facts];
-  if(d>=2||(d>-2&&steadier&&a.major<=b.major)) return ["keep","✓","Keep the change: the squad is as good or better.",facts];
-  return ["same","=","No clear difference.",facts];
+function loadEvals(){
+  if(window.__EVALS__) return evSetData(window.__EVALS__);
+  fetch("api/evals",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(d=>{ if(d&&d.config) evSetData(d); }).catch(()=>{});
 }
 function renderEvals(){
   const A=EV.exams.find(x=>x.id===$("ev-a").value), first=A.reason==="baseline";
   $("ev-b-wrap").hidden=first; $("ev-b-first").hidden=!first;
-  const B=first?A:EV.exams.find(x=>x.id===$("ev-b").value);
-  const a=evStats(A), b=evStats(B);
-  const [cls,icon,head,sub]=evVerdict(A,B,a,b);
+  const B=first?null:EV.exams.find(x=>x.id===$("ev-b").value), C=B||A;
+  const a=EVC.stats(A), b=EVC.stats(C);
+  const [cls,icon,head,sub]=EVC.verdict(A,B,EV.config);
   const v=$("ev-verdict"); v.className="ev-verdict "+cls; v.innerHTML='<span class="ic" aria-hidden="true"></span><div><b></b><p></p></div>';
-  v.querySelector(".ic").textContent=icon; v.querySelector("b").textContent=head; v.querySelector("p").textContent=(A.detail?A.detail+". ":"")+sub;
-  // the one setup, stats of the chosen exam with the change against the other one
-  $("ev-setup-title").textContent="Your squad: "+EV.setup.name; $("ev-setup-sub").textContent=EV.setup.sub;
-  const box=$("ev-stats"); box.innerHTML="";
-  const T=EV.targets;
-  if(first){ [["Hidden tests",a.pct,v=>v.toFixed(0)+"%","target ≥ "+T.pct+"%",a.pct>=T.pct],["Spread between runs",a.spread,v=>v.toFixed(0)+" pts","target ≤ "+T.spread+" pts",a.spread<=T.spread],
-      ["Major findings / run",a.major,v=>v.toFixed(1),"target ≤ "+T.major,a.major<=T.major],["Fix rounds / run",a.rounds,v=>v.toFixed(1),"no target",null],
-      ["Human interventions",a.human,v=>String(v),"target "+T.human,a.human<=T.human],["Time per run",a.mins,v=>v.toFixed(0)+" min","no target",null]]
-    .forEach(([k,va,f,t,ok])=>{ const c=document.createElement("div"); c.className="ev-stat"; c.innerHTML='<div class="k"></div><div class="v"></div><div class="d"></div>';
-      c.querySelector(".k").textContent=k; c.querySelector(".v").textContent=f(va); const d=c.querySelector(".d"); d.className="d "+(ok===null?"flat":ok?"up":"down"); d.textContent=(ok===null?"":ok?"✓ ":"✗ ")+t; box.append(c); }); }
+  v.querySelector(".ic").textContent=icon; v.querySelector("b").textContent=head+(A.finishedAt?"":" (exam still running)"); v.querySelector("p").textContent=(A.detail?A.detail+". ":"")+sub;
+  const S=EV.config.setup||{}; $("ev-setup-title").textContent="Your squad: "+(A.setup||S.name||""); $("ev-setup-sub").textContent="Every exam uses the same "+EV.config.stories.length+" practice stories, "+(EV.config.runsPerStory||3)+" runs each.";
+  const box=$("ev-stats"); box.innerHTML=""; const T=EV.config.targets;
+  const card=(k,val,cl,txt)=>{ const c=document.createElement("div"); c.className="ev-stat"; c.innerHTML='<div class="k"></div><div class="v"></div><div class="d"></div>';
+    c.querySelector(".k").textContent=k; c.querySelector(".v").textContent=val; const d=c.querySelector(".d"); d.className="d "+cl; d.textContent=txt; box.append(c); };
+  if(first) [["Hidden tests",a.pct,v=>v.toFixed(0)+"%","target ≥ "+T.hiddenPassPct+"%",a.pct>=T.hiddenPassPct],["Spread between runs",a.spread,v=>v.toFixed(0)+" pts","target ≤ "+T.spreadPts+" pts",a.spread<=T.spreadPts],
+      ["Major findings / run",a.major,v=>v.toFixed(1),"target ≤ "+T.majorPerRun,a.major<=T.majorPerRun],["Fix rounds / run",a.rounds,v=>v.toFixed(1),"no target",null],
+      ["Human interventions",a.human,v=>String(v),"target "+T.humanInterventions,a.human<=T.humanInterventions],["Time per run",a.mins,v=>v.toFixed(0)+" min","no target",null]]
+    .forEach(([k,va,f,t,ok])=>card(k,f(va),ok===null?"flat":ok?"up":"down",(ok===null?"":ok?"✓ ":"✗ ")+t));
   else [["Hidden tests",a.pct,b.pct,v=>v.toFixed(0)+"%",true],["Spread between runs",a.spread,b.spread,v=>v.toFixed(0)+" pts",false],["Major findings / run",a.major,b.major,v=>v.toFixed(1),false],
-   ["Fix rounds / run",a.rounds,b.rounds,v=>v.toFixed(1),false],["Human interventions",a.human,b.human,v=>String(v),false],["Time per run",a.mins,b.mins,v=>v.toFixed(0)+" min",false]]
-   .forEach(([k,va,vb,f,hi])=>{ const c=document.createElement("div"); c.className="ev-stat"; c.innerHTML='<div class="k"></div><div class="v"></div><div class="d"></div>';
-     c.querySelector(".k").textContent=k; c.querySelector(".v").textContent=f(va);
-     const diff=va-vb, small=Math.abs(diff)<(hi?1:0.05)*(k==="Time per run"?20:1), good=hi?diff>0:diff<0; const d=c.querySelector(".d");
-     d.className="d "+(A===B||small?"flat":good?"up":"down"); d.textContent=A===B||small?"same as "+B.date:(diff>0?"▲ ":"▼ ")+f(Math.abs(diff)).replace("%"," pts")+" vs "+B.date; box.append(c); });
+     ["Fix rounds / run",a.rounds,b.rounds,v=>v.toFixed(1),false],["Human interventions",a.human,b.human,v=>String(v),false],["Time per run",a.mins,b.mins,v=>v.toFixed(0)+" min",false]]
+    .forEach(([k,va,vb,f,hi])=>{ const diff=va-vb, small=Math.abs(diff)<(hi?1:0.05)*(k==="Time per run"?20:1), good=hi?diff>0:diff<0;
+      card(k,f(va),A===C||small?"flat":good?"up":"down",A===C||small?"same as "+evName(C).split(" · ")[0]:(diff>0?"▲ ":"▼ ")+f(Math.abs(diff)).replace("%"," pts")+" vs "+evName(C).split(" · ")[0]); });
   // scoreboard
   const tb=$("ev-board"); tb.innerHTML="<thead><tr><th>Practice story</th><th class='hide-s'>What it checks</th><th></th><th></th><th>Change</th></tr></thead>";
-  tb.querySelectorAll("th")[2].textContent=first?"":evName(B); tb.querySelectorAll("th")[3].textContent=evName(A);
-  if(first){ tb.querySelectorAll("th")[2].remove(); tb.querySelectorAll("th")[3].textContent="Spread"; }
+  const th=tb.querySelectorAll("th"); th[2].textContent=first?"":evName(C); th[3].textContent=evName(A);
+  if(first){ th[2].remove(); th[4].textContent="Spread"; }
   const body=document.createElement("tbody");
-  EV.stories.forEach(st=>{ const tr=document.createElement("tr"); tr.className="story"+(st.id===evSel?" sel":""); tr.tabIndex=0;
-    const cell=(ex,col)=>{ const td=document.createElement("td"); const runs=ex.runs[st.id]; const bars=document.createElement("span"); bars.className="ev-runs"; bars.style.setProperty("--c",col); bars.setAttribute("aria-hidden","true");
-      runs.forEach(r=>{ const i=document.createElement("i"); i.style.height=Math.max(3,(r[0]/st.tests)*30)+"px"; bars.append(i); });
-      const pct=evAvg(runs.map(r=>r[0]))/st.tests*100; const sp=document.createElement("span"); sp.className="ev-pct"; sp.textContent=pct.toFixed(0)+"%";
-      td.append(bars,sp); td.setAttribute("aria-label",runs.map(r=>r[0]+"/"+st.tests).join(", ")+" hidden tests, average "+pct.toFixed(0)+"%"); td.title="Runs: "+runs.map(r=>r[0]+"/"+st.tests).join(" · "); return [td,pct]; };
-    const tdS=document.createElement("td"); tdS.className="ev-story"; tdS.innerHTML="<b></b><small></small>"; tdS.querySelector("b").textContent=st.id+" · "+st.title; tdS.querySelector("small").textContent=st.kind+" · "+st.lanes+" · "+st.tests+" hidden tests";
+  EV.config.stories.forEach(st=>{ const tr=document.createElement("tr"); tr.className="story"+(st.id===evSel?" sel":""); tr.tabIndex=0;
+    const cell=(ex,col)=>{ const td=document.createElement("td"); const runs=evRuns(ex,st.id); const bars=document.createElement("span"); bars.className="ev-runs"; bars.style.setProperty("--c",col); bars.setAttribute("aria-hidden","true");
+      runs.forEach(r=>{ const i=document.createElement("i"); i.style.height=Math.max(3,(r.passed/st.tests)*30)+"px"; bars.append(i); });
+      const pct=runs.length?EVC.avg(runs.map(r=>r.passed))/st.tests*100:NaN; const sp=document.createElement("span"); sp.className="ev-pct"; sp.textContent=isNaN(pct)?"not run":pct.toFixed(0)+"%";
+      td.append(bars,sp); td.setAttribute("aria-label",runs.length?runs.map(r=>r.passed+"/"+st.tests).join(", ")+" hidden tests, average "+pct.toFixed(0)+"%":"not run"); td.title="Runs: "+runs.map(r=>r.passed+"/"+st.tests).join(" · "); return [td,pct]; };
+    const tdS=document.createElement("td"); tdS.className="ev-story"; tdS.innerHTML="<b></b><small></small>"; tdS.querySelector("b").textContent=st.id+" · "+st.title; tdS.querySelector("small").textContent=st.kind+" · "+(Array.isArray(st.lanes)?st.lanes.join(" + "):st.lanes)+" · "+st.tests+" hidden tests";
     const tdL=document.createElement("td"); tdL.className="hide-s ev-muted"; tdL.textContent=st.why;
-    const [tdB,pb]=cell(B,"var(--muted)"), [tdA,pa]=cell(A,"var(--s1)"); const dd=pa-pb; const tdD=document.createElement("td"); const sp=document.createElement("span");
-    sp.className="ev-delta "+(dd>=1?"up":dd<=-1?"down":"flat"); sp.textContent=(dd>=1?"▲ +":dd<=-1?"▼ ":"= ")+(Math.abs(dd)>=1?Math.round(dd)+" pts":"same"); tdD.append(sp);
-    if(first){ const runs=A.runs[st.id].map(r=>r[0]/st.tests*100), spr=Math.max(...runs)-Math.min(...runs); sp.className="ev-delta "+(spr<=EV.targets.spread?"flat":"down"); sp.textContent=spr.toFixed(0)+" pts"; tr.append(tdS,tdL,tdA,tdD); }
+    const [tdB,pb]=cell(C,"var(--muted)"), [tdA,pa]=cell(A,"var(--s1)"); const dd=pa-pb; const tdD=document.createElement("td"); const sp=document.createElement("span");
+    sp.className="ev-delta "+(dd>=1?"up":dd<=-1?"down":"flat"); sp.textContent=isNaN(dd)?"–":(dd>=1?"▲ +":dd<=-1?"▼ ":"= ")+(Math.abs(dd)>=1?Math.round(dd)+" pts":"same"); tdD.append(sp);
+    if(first){ const p=evRuns(A,st.id).map(r=>r.passed/st.tests*100), spr=p.length?Math.max(...p)-Math.min(...p):0; sp.className="ev-delta "+(spr<=T.spreadPts?"flat":"down"); sp.textContent=p.length?spr.toFixed(0)+" pts":"–"; tr.append(tdS,tdL,tdA,tdD); }
     else tr.append(tdS,tdL,tdB,tdA,tdD);
     const pick=()=>{ evSel=st.id; renderEvals(); }; tr.addEventListener("click",pick); tr.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); pick(); }});
     body.append(tr); });
   tb.append(body);
-  // detail for the selected story
-  const st=EV.stories.find(s=>s.id===evSel), det=$("ev-detail");
-  const rows=[["Hidden tests passed",0,true,r=>r+"/"+st.tests],["Major findings",1,false,String],["Fix rounds",2,false,String],["Human interventions",3,false,String],["Minutes",4,false,String]];
-  let h="<table><caption class='ev-muted' style='text-align:left;padding-bottom:6px'></caption><thead><tr><th></th><th colspan='3' class='grp gb'></th><th colspan='3' class='grp ga'></th></tr><tr><th>"+st.id+", run by run</th><th>Run 1</th><th>Run 2</th><th>Run 3</th><th>Run 1</th><th>Run 2</th><th>Run 3</th></tr></thead><tbody>";
-  rows.forEach(([lab,k,hi,f])=>{ const rb=B.runs[st.id].map(r=>r[k]), ra=A.runs[st.id].map(r=>r[k]); const ab=evAvg(rb), aa=evAvg(ra);
-    const c=aa===ab?"":(hi?aa>ab:aa<ab)?"better":"worse";
-    h+="<tr><td>"+lab+"</td>"+rb.map(x=>"<td>"+f(x)+"</td>").join("")+ra.map(x=>"<td class='"+c+"'>"+f(x)+"</td>").join("")+"</tr>"; });
-  if(first){ h="<table><caption class='ev-muted' style='text-align:left;padding-bottom:6px'></caption><thead><tr><th>"+st.id+", run by run</th><th>Run 1</th><th>Run 2</th><th>Run 3</th></tr></thead><tbody>";
-    rows.forEach(([lab,k,hi,f])=>{ h+="<tr><td>"+lab+"</td>"+A.runs[st.id].map(r=>"<td>"+f(r[k])+"</td>").join("")+"</tr>"; });
-    det.innerHTML=h+"</tbody></table>"; det.querySelector("caption").textContent=st.id+" · "+st.title+": the three runs of the first exam. Similar numbers in each row mean a consistent squad."; return; }
-  det.innerHTML=h+"</tbody></table>"; det.querySelector(".gb").textContent=evName(B); det.querySelector(".ga").textContent=evName(A);
-  det.querySelector("caption").textContent=st.id+" · "+st.title+": "+evName(B)+" (left) and "+evName(A)+" (right). Green or red marks where the right-hand exam is better or worse on average.";
+  // run by run for the selected story
+  const st=EV.config.stories.find(s=>s.id===evSel)||EV.config.stories[0], det=$("ev-detail"), n=EV.config.runsPerStory||3;
+  const rows=[["Hidden tests passed","passed",true,x=>x+"/"+st.tests],["Major findings","major",false,String],["Fix rounds","rounds",false,String],["Human interventions","human",false,String],["Minutes","minutes",false,String]];
+  const runCells=(ex,k,f,c)=>Array.from({length:n},(_,i)=>{ const r=evRuns(ex,st.id).find(x=>x.run===i+1); return "<td"+(c?" class='"+c+"'":"")+">"+(r?f(r[k]):"–")+"</td>"; }).join("");
+  const heads=Array.from({length:n},(_,i)=>"<th>Run "+(i+1)+"</th>").join("");
+  let h="<table><caption class='ev-muted' style='text-align:left;padding-bottom:6px'></caption><thead>";
+  if(first){ h+="<tr><th>"+st.id+", run by run</th>"+heads+"</tr></thead><tbody>"; rows.forEach(([lab,k,,f])=>{ h+="<tr><td>"+lab+"</td>"+runCells(A,k,f)+"</tr>"; }); }
+  else{ h+="<tr><th></th><th colspan='"+n+"' class='grp gb'></th><th colspan='"+n+"' class='grp ga'></th></tr><tr><th>"+st.id+", run by run</th>"+heads+heads+"</tr></thead><tbody>";
+    rows.forEach(([lab,k,hi,f])=>{ const ab=EVC.avg(evRuns(C,st.id).map(r=>r[k])), aa=EVC.avg(evRuns(A,st.id).map(r=>r[k])); const c=aa===ab?"":(hi?aa>ab:aa<ab)?"better":"worse";
+      h+="<tr><td>"+lab+"</td>"+runCells(C,k,f)+runCells(A,k,f,c)+"</tr>"; }); }
+  det.innerHTML=h+"</tbody></table>";
+  if(first) det.querySelector("caption").textContent=st.id+" · "+st.title+": the runs of this exam. Similar numbers in each row mean a consistent squad.";
+  else{ det.querySelector(".gb").textContent=evName(C); det.querySelector(".ga").textContent=evName(A);
+    det.querySelector("caption").textContent=st.id+" · "+st.title+": "+evName(C)+" (left) and "+evName(A)+" (right). Green or red marks where the right-hand exam is better or worse on average."; }
 }
 function renderEvalChart(){
+  if(!EV.exams.length) return;
   const box=$("ev-chart"); const W=Math.max(300,Math.round(box.clientWidth||760)), narrow=W<620, H=narrow?240:290, L=44, R=narrow?22:60, T=40, Bm=30;
-  const ex=EV.exams, n=ex.length, vals=ex.map(e=>evStats(e).pct);
-  const x=i=>L+(n===1?0:i*(W-L-R)/(n-1)), y=v=>T+(100-v)/(100-70)*(H-T-Bm);
+  const ex=EV.exams, n=ex.length, vals=ex.map(e=>EVC.stats(e).pct), lo=Math.min(70,Math.floor(Math.min(...vals)/10)*10);
+  const x=i=>L+(n===1?(W-L-R)/2:i*(W-L-R)/(n-1)), y=v=>T+(100-v)/(100-lo)*(H-T-Bm), ticks=[]; for(let v=lo;v<=100;v+=lo<50?20:10) ticks.push(v);
+  const dl=e=>new Date(e.date).toLocaleDateString([],{day:"numeric",month:"short"});
   let s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Hidden tests passed at each exam"><g class="grid">';
-  [70,80,90,100].forEach(v=>{ s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'"/>'; }); s+="</g>";
-  [70,80,90,100].forEach(v=>{ s+='<text class="ax" x="'+(L-8)+'" y="'+(y(v)+4)+'" text-anchor="end">'+v+'%</text>'; });
-  ex.forEach((e,i)=>{ s+='<text class="ax" x="'+x(i)+'" y="'+(H-8)+'" text-anchor="middle">'+e.date+'</text>';
-    if(e.reason!=="baseline"){ s+='<line class="mark" x1="'+x(i)+'" x2="'+x(i)+'" y1="'+(T-18)+'" y2="'+(H-Bm)+'"/><text class="mlab" x="'+x(i)+'" y="14" text-anchor="'+(i===n-1?"end":"middle")+'">'+e.label+'</text>'; }
-    else s+='<text class="mlab" x="'+x(i)+'" y="14" text-anchor="'+(i===0?"start":"middle")+'">'+e.label+'</text>'; });
+  ticks.forEach(v=>{ s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'"/>'; }); s+="</g>";
+  ticks.forEach(v=>{ s+='<text class="ax" x="'+(L-8)+'" y="'+(y(v)+4)+'" text-anchor="end">'+v+'%</text>'; });
+  const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  ex.forEach((e,i)=>{ s+='<text class="ax" x="'+x(i)+'" y="'+(H-8)+'" text-anchor="middle">'+dl(e)+'</text>';
+    const anchor=i===n-1&&n>1?"end":i===0&&n>1?"start":"middle";
+    if(e.reason!=="baseline") s+='<line class="mark" x1="'+x(i)+'" x2="'+x(i)+'" y1="'+(T-18)+'" y2="'+(H-Bm)+'"/>';
+    s+='<text class="mlab" x="'+x(i)+'" y="14" text-anchor="'+anchor+'">'+esc(e.label)+'</text>'; });
   s+='<line class="xh" id="ev-xh" y1="'+T+'" y2="'+(H-Bm)+'"/>';
-  s+='<path class="ln ev-ln" d="M'+vals.map((v,i)=>x(i)+","+y(v)).join(" L")+'"/>';
-  vals.forEach((v,i)=>{ const drop=i>0&&v-vals[i-1]<=-2; s+='<circle class="pt ev-pt'+(drop?" drop":"")+'" r="5" cx="'+x(i)+'" cy="'+y(v)+'"/>';
-    s+='<text class="vlab" x="'+(x(i)+(i===n-1?-8:8))+'" y="'+(y(v)+20)+'" text-anchor="'+(i===n-1?"end":"start")+'">'+v.toFixed(0)+'%</text>'; });
+  if(n>1) s+='<path class="ln ev-ln" d="M'+vals.map((v,i)=>x(i)+","+y(v)).join(" L")+'"/>';
+  vals.forEach((v,i)=>{ const drop=i>0&&v-vals[i-1]<=-((EV.config.compare||{}).dropPts||2); s+='<circle class="pt ev-pt'+(drop?" drop":"")+'" r="5" cx="'+x(i)+'" cy="'+y(v)+'"/>';
+    s+='<text class="vlab" x="'+(x(i)+(i===n-1&&n>1?-8:8))+'" y="'+(y(v)+20)+'" text-anchor="'+(i===n-1&&n>1?"end":"start")+'">'+v.toFixed(0)+'%</text>'; });
   s+='<rect id="ev-hit" x="'+(L-10)+'" y="'+T+'" width="'+(W-L-R+20)+'" height="'+(H-T-Bm)+'" fill="transparent"/></svg>';
   box.querySelector("svg")?.remove(); box.insertAdjacentHTML("afterbegin",s);
   const svg=box.querySelector("svg"), tip=$("ev-tip"), xh=$("ev-xh");
-  const show=evt=>{ const r=svg.getBoundingClientRect(); const vx=(evt.clientX-r.left)/r.width*W; const i=Math.max(0,Math.min(n-1,Math.round((vx-L)/((W-L-R)/(n-1)))));
-    xh.setAttribute("x1",x(i)); xh.setAttribute("x2",x(i)); xh.style.opacity=1; const st=evStats(ex[i]);
+  const show=evt=>{ const r=svg.getBoundingClientRect(); const vx=(evt.clientX-r.left)/r.width*W; const i=n===1?0:Math.max(0,Math.min(n-1,Math.round((vx-L)/((W-L-R)/(n-1)))));
+    xh.setAttribute("x1",x(i)); xh.setAttribute("x2",x(i)); xh.style.opacity=1; const st=EVC.stats(ex[i]);
     tip.innerHTML="<b></b><div></div><div></div><div></div>"; const d=tip.querySelectorAll("div");
-    tip.querySelector("b").textContent=evName(ex[i]); d[0].textContent=ex[i].detail; d[1].textContent="Hidden tests "+st.pct.toFixed(0)+"% · spread "+st.spread.toFixed(0)+" pts"; d[2].textContent="Major findings "+st.major.toFixed(1)+"/run · interventions "+st.human;
+    tip.querySelector("b").textContent=evName(ex[i]); d[0].textContent=ex[i].detail||""; d[1].textContent="Hidden tests "+st.pct.toFixed(0)+"% · spread "+st.spread.toFixed(0)+" pts"; d[2].textContent="Major findings "+st.major.toFixed(1)+"/run · interventions "+st.human;
     const px=x(i)/W*r.width; tip.style.left=Math.max(0,Math.min(px+12,r.width-260))+"px"; tip.style.top="40px"; tip.style.opacity=1; };
   svg.querySelector("#ev-hit").addEventListener("pointermove",show);
   svg.querySelector("#ev-hit").addEventListener("pointerleave",()=>{ tip.style.opacity=0; xh.style.opacity=0; });
   const ht=$("ev-histtable"); ht.innerHTML="<thead><tr><th>Exam</th><th>Why it ran</th><th>Hidden tests</th><th>Spread</th><th>Major findings / run</th><th>Interventions</th></tr></thead>";
-  const tb=document.createElement("tbody"); ex.forEach(e=>{ const st=evStats(e); const tr=document.createElement("tr");
-    [evName(e),e.detail,st.pct.toFixed(0)+"%",st.spread.toFixed(0)+" pts",st.major.toFixed(1),String(st.human)].forEach(t=>{ const td=document.createElement("td"); td.textContent=t; tr.append(td); }); tb.append(tr); }); ht.append(tb);
+  const tb=document.createElement("tbody"); ex.forEach(e=>{ const st=EVC.stats(e); const tr=document.createElement("tr");
+    [evName(e),e.detail||e.label,st.pct.toFixed(0)+"%",st.spread.toFixed(0)+" pts",st.major.toFixed(1),String(st.human)].forEach(t=>{ const td=document.createElement("td"); td.textContent=t; tr.append(td); }); tb.append(tr); }); ht.append(tb);
 }
 (function initEvals(){
-  ["ev-a","ev-b"].forEach((id,k)=>{ const sel=$(id); EV.exams.slice().reverse().forEach(e=>{ const o=document.createElement("option"); o.value=e.id; o.textContent=evName(e); sel.append(o); });
-    sel.value=k===0?EV.exams[EV.exams.length-1].id:EV.exams[EV.exams.length-2].id; sel.addEventListener("change",renderEvals); });
-  renderEvals();
+  ["ev-a","ev-b"].forEach(id=>$(id).addEventListener("change",()=>{ renderEvals(); }));
   let lastW=0; const draw=()=>{ const w=$("ev-chart").clientWidth; if(w&&w!==lastW){ lastW=w; renderEvalChart(); } };
   new ResizeObserver(draw).observe($("ev-chart"));
+  loadEvals(); setInterval(()=>{ if(!$("view-evals").hidden) loadEvals(); },20000);
 })();
+/* Exam banner on the other tabs, and the run's header while an exam runs */
+function renderEvalBanner(){
+  const e=run.eval, b=$("eval-banner"); b.hidden=!e; if(!e) return;
+  b.textContent="EVAL · "+e.story+" · run "+e.run+" of "+e.runs+" ("+e.nth+" of "+e.of+" in this exam"+(e.label?", "+e.label:"")+") · nothing is pushed, merged or deployed";
+}
+const renderRunBase=renderRun;
+renderRun=function(){ renderRunBase(); renderEvalBanner();
+  if(!run.eval) return; // a practice story: no backlog issue to link to
+  $("subtitle").textContent=(run.title||"")+" · practice story, not in the backlog";
+  const box=$("issues"); box.innerHTML=""; const d=document.createElement("div"); d.className="issue"; d.innerHTML='<span class="k"></span><span class="t"></span>';
+  d.firstChild.textContent="Practice story "+run.eval.story; d.lastChild.textContent="evals/stories/"+run.eval.story+".md · exam "+run.eval.exam; box.append(d); };
 
 /* ---------- Tabs ---------- */
 const TABS=["orch","squad","flow","evals"];
@@ -1204,7 +1301,8 @@ function showTab(name,focus){
   if(focus) $("tab-"+name).focus();
   if(name==="flow") requestAnimationFrame(drawWires);
   if(name==="orch") renderOrch();
-  document.querySelector(".lower").style.display=name==="evals"?"none":""; // the run's activity log and stories don't belong to the exam
+  if(name==="evals"){ loadEvals(); requestAnimationFrame(renderEvalChart); }
+  document.querySelector(".lower").style.display=name==="evals"?"none":""; // the run's activity log and stories don't belong to the exams
 }
 TABS.forEach(t=>$("tab-"+t).addEventListener("click",()=>showTab(t)));
 document.querySelector(".tabs").addEventListener("keydown",e=>{ if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft") return; e.preventDefault();

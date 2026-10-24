@@ -10,6 +10,10 @@ requirements; you make them precise and buildable, and anything unclear becomes 
 The orchestrator gives you the issue number(s), the run folder, and the **mode**:
 - `story`: run folder `runs/issue-<N>/` (N = first issue number).
 - `bug`: a bug issue the testers logged; run folder `runs/issue-<B>/`.
+- `eval`: an exam run on a practice story. The story, its Applications and the parts of the Screen and API documents it
+  needs are in `story.md` in the run folder, and `apps.json` is already there: skip steps 2 and 3 (no issue, no
+  discover). Nobody can be asked: use its "Answers the squad already has", and decide anything else yourself under
+  `## Assumptions` instead of `## Open questions`. Never read anything in `evals/`.
 It may also give you answers to earlier open questions: they are now part of the requirement.
 
 ## Steps

@@ -33,6 +33,11 @@ The story is then commented and labelled **Ready for QA**. Bugs the testers log 
 (`/storyrail fix <bug>`): the same rail for the affected app only, with a regression test. Details:
 [docs/storyrail/PIPELINE.md](docs/storyrail/PIPELINE.md).
 
+**Exams (evaluation-driven development).** When IBM updates Bob, or you change a mode, a rule, the house standards or an
+MCP server, `/storyrail eval` makes the whole squad build fixed practice stories from frozen code, three times each, and
+hidden tests the agents never see grade every run. Nothing is pushed or merged. The **Evals** tab compares the score with
+the previous exam and says whether to keep the change: [evals/README.md](evals/README.md).
+
 ## How to run it
 
 One-time setup: [docs/storyrail/SETUP.md](docs/storyrail/SETUP.md) (GitLab token, the projects and the scanners in
@@ -93,6 +98,7 @@ Open the `storyrail` folder in **IBM Bob**, and **http://localhost:4800** on a s
 | `scripts/storyrail-lanes.mjs` | Checks that agents running side by side stayed in their lanes |
 | `scripts/storyrail-status.mjs`, `scripts/storyrail-dashboard.mjs`, `storyrail-dashboard/` | Live dashboard (http://localhost:4800): the orchestrator handing out work, the squad with a chat per member, and the rail diagram, including what happens outside StoryRail |
 | `docs/demo/index.html` | Stand-alone demo replay with sample data: open the file, no server or network needed (`node scripts/storyrail-build-demo.mjs` rebuilds it) |
+| `evals/`, `scripts/storyrail-eval.mjs` | Exams: practice stories, hidden tests (the answer key), targets and every exam's results ([evals/README.md](evals/README.md)) |
 | `docs/brand/` | Logo: the S-Track mark, favicon and wordmark (light and dark); `storyrail-rails.svg`/`.png` is the 1280×640 title card for slides and presentations |
 | `runs/issue-<N>/` | Every run's documents, spec, review and scan reports, fix responses, work notes and release record |
 | `docs/storyrail/` | [Pipeline and gates](docs/storyrail/PIPELINE.md), [setup](docs/storyrail/SETUP.md), GitLab issue templates |

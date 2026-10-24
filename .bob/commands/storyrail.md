@@ -1,6 +1,6 @@
 ---
-description: Run a GitLab user story or bug through StoryRail (story, `fix <bugs>` or `status`)
-argument-hint: "<issue> [more issues] | fix <bug-issue> [...] | status"
+description: Run a GitLab user story or bug through StoryRail (story, `fix <bugs>`, `eval <reason>` or `status`)
+argument-hint: "<issue> [more issues] | fix <bug-issue> [...] | eval <baseline|tool|change> [what changed] | status"
 ---
 
 Switch to the **StoryRail · Orchestrator** mode (`sr-orchestrator`) and follow its brief in

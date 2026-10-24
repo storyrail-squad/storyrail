@@ -22,6 +22,8 @@ For each scanner and each application, with the command for its type:
     the command produced, or read the ScanCentral / SSC result the command points to.
   - **NexusIQ:** the CLI prints the policy evaluation and writes the JSON report named in the command (`-r`); read the
     policy violations with their threat level and the component (name, version) that causes each one.
+- **In an exam** (the orchestrator says so; run folder `runs/issue-eval-…`): nothing is pushed, so treat `mode: ci` as
+  `off` and write "skipped in an exam (ci mode)" for that scanner.
 - **`mode: ci`** — the orchestrator has pushed the run branch. Find its pipeline
   (`node scripts/storyrail-gitlab.mjs pipeline <app> --ref <run branch>`), wait for the scan job named in
   `scans.<tool>.ciJob` (poll every 60 s, at most 30 minutes), then read the job's result

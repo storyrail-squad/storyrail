@@ -13,7 +13,7 @@ documents are in GitLab, and ends when the merged code's GitLab CI pipeline is g
 | `.bob/rules/01-project-guide.md` | Project conventions, loaded in every mode. |
 | `.bob/rules-<mode>/01-brief.md` | The full brief of one mode (what to do, gates, what to report). |
 | `.bob/commands/storyrail.md` | The `/storyrail` command: switches to the orchestrator mode and passes your arguments. |
-| `.bobignore` | Files Bob must never read (`.env`, keys). |
+| `.bobignore` | Files Bob must never read (`.env`, keys, and `evals/hidden/`: the answer key of the exams). |
 | `.bob/rules/02-house-standards.md` | Your company's design-system and backend coding standards. Off until switched on in `storyrail.config.json`; see "Optional: design system and reference app". |
 | `.bob/mcp.example.json` | Template for MCP servers (Figma, Storybook; add your GitLab MCP server here too); copy it to `.bob/mcp.json`. |
 
@@ -186,16 +186,32 @@ The spoke to whoever is working lights up, a waiting hand-off glows amber, and d
 get a "Round 2" tag. The line above the diagram says what each active member is doing, one line per member.
 
 The **Squad** tab shows every member with a name and a role, with whoever is working shown large at the top. The
-**Flow** tab has the rail diagram, including the steps after StoryRail. The theme switch in the top-right corner sets
+**Flow** tab has the rail diagram, including the steps after StoryRail. The **Evals** tab shows the squad's exams
+(`evals/results/`): the verdict of the latest one against the one before, a scoreboard per practice story and the
+history; while an exam runs, every tab shows an EVAL banner. The theme switch in the top-right corner sets
 Auto, Light or Dark.
+
+### Exams after a change
+
+1. **Once:** fill in the practice stories (`node scripts/storyrail-eval.mjs validate` lists every `TODO(office)`). The
+   easiest source is a story the squad already delivered: freeze the apps at the commit before it was merged, copy the
+   story with the parts of its Screen and API documents, and turn its acceptance tests into hidden tests. Step by step:
+   [evals/README.md](../../evals/README.md). Then `node scripts/storyrail-eval.mjs check E1`: on the frozen code most
+   hidden tests must fail.
+2. `/storyrail eval baseline` while the squad works well.
+3. After that: IBM updated Bob → `/storyrail eval tool`; you changed a mode, a rule, the house standards, an MCP server
+   or a setting → `/storyrail eval change <what you changed>`.
+
+An exam is (practice stories × 3) story runs, so it takes a few hours: run it when something changed, not every day.
+The hidden tests are listed in `.bobignore`, so Bob's file tools can't read them.
 
 **Rename the squad** in `storyrail.config.json` → `squad.members` (name, role, a one-line "about"; `outOfScope` for a
 person who works outside StoryRail). Restart the dashboard server to pick it up.
 
 ### Showing the demo anywhere (no network, no account)
 
-`docs/demo/index.html` is a single, self-contained page that replays a sample run of story #51 on a loop, with the
-Orchestration, Squad and Flow tabs, chat from the members' records and an **Evals** tab with sample exam data.
+`docs/demo/index.html` is a single, self-contained page that replays a sample run of story #1 (three applications) on a loop, with the
+Orchestration, Squad and Flow tabs, chat from the members' records and the **Evals** tab with sample exams.
 It needs no server, no login and no internet:
 
 - **Double-click** `docs/demo/index.html`, or open http://localhost:4800/demo while the dashboard runs.

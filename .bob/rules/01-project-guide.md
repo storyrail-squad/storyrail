@@ -38,6 +38,7 @@ and writes `runs/issue-<N>/apps.json`. Nothing about the applications is configu
 | `runs/issue-<N>/apps.json` | The run's applications, their contracts and tests, and the dependency order | storyrail-apps.mjs |
 | `runs/issue-<N>/docs/` | The Screen and API documents of the story, downloaded from GitLab | sr-req-fetch |
 | `runs/issue-<N>/` | Everything one run produces: spec, review and scan reports, fix responses, release record | all |
+| `evals/` | Exams (`/storyrail eval`): practice stories, targets and results. **`evals/hidden/` is the answer key: no mode reads it** | orchestrator, `scripts/storyrail-eval.mjs` |
 
 `projects/` is not part of the hub repo. **GitLab access**: `node scripts/storyrail-gitlab.mjs` with a personal access
 token in the variable named by `gitlab.tokenEnv` (default `GITLAB_TOKEN`), or the GitLab MCP server for reads. Never

@@ -325,6 +325,18 @@ function trusted(req) {
   return sameOrigin && req.headers['x-storyrail'] === '1';
 }
 
+/** Exam history for the Evals tab: evals/results/*.json plus what the page needs from evals/evals.json (never the hidden tests). */
+function evals() {
+  const cfg = readJson(join(ROOT, 'evals', 'evals.json'), null);
+  if (!cfg) return { config: null, exams: [] };
+  const dir = join(ROOT, 'evals', 'results');
+  const exams = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => readJson(join(dir, f), null)).filter(Boolean) : [];
+  const config = { setup: cfg.setup, runsPerStory: cfg.runsPerStory, targets: cfg.targets, compare: cfg.compare,
+    stories: (cfg.stories ?? []).map(({ id, title, kind, lanes, apps, tests, why }) => ({ id, title, kind, tests, why,
+      lanes: lanes ?? String(apps ?? '').split(',').map((a) => a.split('>')[0].trim()).filter(Boolean) })) };
+  return { config, exams };
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
   const path = url.pathname;
@@ -340,6 +352,12 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === 'GET' && path === '/status.json') {
       return send(res, 200, existsSync(join(STATE_DIR, 'status.json')) ? await readFile(join(STATE_DIR, 'status.json')) : '{}');
+    }
+    if (req.method === 'GET' && path === '/evals-core.js') {
+      return send(res, 200, await readFile(join(ROOT, 'storyrail-dashboard', 'evals-core.js')), 'text/javascript; charset=utf-8');
+    }
+    if (req.method === 'GET' && path === '/api/evals') {
+      return send(res, 200, evals());
     }
     if (req.method === 'GET' && path === '/squad.json') {
       return send(res, 200, { engine: ENGINE, members: squad.members });
