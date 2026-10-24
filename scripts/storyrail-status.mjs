@@ -7,8 +7,9 @@
 //   node scripts/storyrail-status.mjs set <station> <status> [progress] [note...]
 //   node scripts/storyrail-status.mjs log <station> <ok|warn|bad|info> <message...>
 //   node scripts/storyrail-status.mjs run <key> <value...>             e.g. run phase "Build"
-//   node scripts/storyrail-status.mjs loop <bug issues>                 defect loop inside a story run: resets fetch→QA stations, keeps the run
-//   node scripts/storyrail-status.mjs metric <unit-fe|unit-be|api|ui> <passed> <total>
+//   node scripts/storyrail-status.mjs loop <bug issues>                 defect loop inside a story run: resets every station, keeps the run
+//   node scripts/storyrail-status.mjs apps <N>                          the run's applications (from runs/issue-<N>/apps.json)
+//   node scripts/storyrail-status.mjs metric <unit|api|ui>@<app> <passed> <total>
 //   node scripts/storyrail-status.mjs findings <blocker> <major> <minor> <fixed>   (blocker/major/minor = still open; fixed = fixed so far)
 //   node scripts/storyrail-status.mjs security <high-critical vulns> <lint warnings>
 //   node scripts/storyrail-status.mjs eval <exam> <story> <run> <runs> <nth> <of> [label...]   exam banner on the dashboard
@@ -16,7 +17,7 @@
 //   node scripts/storyrail-status.mjs end
 //   node scripts/storyrail-status.mjs show
 //
-// Stations: req-fetch fe-dev be-dev ui-tests api-tests reviewer gate fixer cicd smoke qa-api manual-tests signoff
+// Stations: req-fetch reviewer gate fixer cicd smoke qa-api manual-tests signoff, and per application dev@<app> tests@<app>
 // Statuses: pending running done failed skipped waiting
 
 import { mkdirSync, readFileSync, writeFileSync, renameSync, openSync, closeSync, unlinkSync, statSync } from 'node:fs';
@@ -28,7 +29,9 @@ const DIR = join(ROOT, '.storyrail');
 const FILE = join(DIR, 'status.json');
 const LOCK = join(DIR, 'status.lock');
 
-const STATIONS = ['req-fetch', 'fe-dev', 'be-dev', 'ui-tests', 'api-tests', 'reviewer', 'gate', 'fixer', 'cicd', 'smoke', 'qa-api', 'manual-tests', 'signoff'];
+// Fixed stations, plus two per application of the run (set with `apps`): dev@<app> and tests@<app>.
+const STATIONS = ['req-fetch', 'reviewer', 'gate', 'fixer', 'cicd', 'smoke', 'qa-api', 'manual-tests', 'signoff'];
+const APP_STATION = /^(dev|tests)@([A-Za-z0-9._-]+)$/;
 const STATUSES = ['pending', 'running', 'done', 'failed', 'skipped', 'waiting'];
 const LEVELS = ['ok', 'warn', 'bad', 'info'];
 const MAX_FEED = 200;
@@ -114,7 +117,7 @@ switch (cmd) {
     if (!bugs) fail('loop needs the bug issue numbers, e.g. loop "50,51"');
     withLock(() => {
       const s = load();
-      for (const st of STATIONS) s.agents[st] = { status: 'pending', progress: 0, note: '' };
+      for (const st of Object.keys(s.agents)) s.agents[st] = { status: 'pending', progress: 0, note: '' };
       s.run.bugs = bugs.split(',').map((n) => n.trim()).filter(Boolean);
       s.run.phase = 'Defect loop';
       delete s.run.endedAt;
@@ -125,7 +128,10 @@ switch (cmd) {
   }
   case 'set': {
     const [station, status, progress, ...note] = args;
-    if (!STATIONS.includes(station)) fail(`unknown station "${station}". Use one of: ${STATIONS.join(' ')}`);
+    const known = () => [...STATIONS, ...(load().run.apps ?? []).flatMap((a) => ['dev', 'tests'].map((k) => `${k}@${a.id}`))];
+    if (!known().includes(station)) {
+      fail(APP_STATION.test(station) ? `unknown application in "${station}": run \`apps <N>\` first, or check the name. Known: ${known().join(' ')}` : `unknown station "${station}". Use one of: ${known().join(' ')}`);
+    }
     if (!STATUSES.includes(status)) fail(`unknown status "${status}". Use one of: ${STATUSES.join(' ')}`);
     const pct = progress === undefined ? undefined : Number(progress);
     if (pct !== undefined && (Number.isNaN(pct) || pct < 0 || pct > 100)) fail('progress must be 0-100');
@@ -161,18 +167,41 @@ switch (cmd) {
     });
     break;
   }
+  case 'apps': {
+    const [n] = args;
+    const file = join(ROOT, 'runs', `issue-${n}`, 'apps.json');
+    let data;
+    try {
+      data = JSON.parse(readFileSync(file, 'utf8'));
+    } catch {
+      fail(`apps needs the run number N with a runs/issue-<N>/apps.json (node scripts/storyrail-apps.mjs discover <N>)`);
+    }
+    withLock(() => {
+      const s = load();
+      s.run.apps = data.order.map((id) => {
+        const a = data.apps.find((x) => x.id === id);
+        return { id: a.id, type: a.type, label: a.label ?? '', consumes: a.consumes ?? [], apiTestsRepo: a.apiTestsRepo?.id ?? null };
+      });
+      for (const a of s.run.apps) for (const k of ['dev', 'tests']) s.agents[`${k}@${a.id}`] ??= { status: 'pending', progress: 0, note: '' };
+      addFeed(s, 'orchestrator', 'info', `Applications: ${s.run.apps.map((a) => a.id).join(' → ')}`);
+      save(s);
+    });
+    break;
+  }
   case 'metric': {
     const [name, passed, total] = args;
-    if (!['unit-fe', 'unit-be', 'api', 'ui'].includes(name)) fail('metric name must be unit-fe, unit-be, api or ui');
+    const m = /^(unit|api|ui)(?:@([A-Za-z0-9._-]+))?$/.exec(name ?? '');
+    if (!m) fail('metric name must be unit, api or ui, optionally @<app>, e.g. unit@library-backend');
     if (Number.isNaN(Number(passed)) || Number.isNaN(Number(total))) fail('metric needs <passed> <total> numbers');
     withLock(() => {
       const s = load();
       s.run.metrics ??= {};
-      s.run.metrics[name] = { passed: Number(passed), total: Number(total) };
-      // The dashboard shows one unit-test tile: frontend + backend together.
-      const parts = ['unit-fe', 'unit-be'].map((k) => s.run.metrics[k]).filter(Boolean);
-      if (parts.length) {
-        s.run.metrics.unit = parts.reduce((a, m) => ({ passed: a.passed + m.passed, total: a.total + m.total }), { passed: 0, total: 0 });
+      s.run.metrics.byApp ??= {};
+      s.run.metrics.byApp[name] = { passed: Number(passed), total: Number(total) };
+      // The dashboard shows one tile per kind: every application added up.
+      for (const kind of ['unit', 'api', 'ui']) {
+        const parts = Object.entries(s.run.metrics.byApp).filter(([k]) => k === kind || k.startsWith(`${kind}@`)).map(([, v]) => v);
+        if (parts.length) s.run.metrics[kind] = parts.reduce((a, x) => ({ passed: a.passed + x.passed, total: a.total + x.total }), { passed: 0, total: 0 });
       }
       save(s);
     });
@@ -224,5 +253,5 @@ switch (cmd) {
     console.log(JSON.stringify(load(), null, 2));
     break;
   default:
-    fail('commands: start, loop, set, log, run, metric, findings, security, eval, end, show');
+    fail('commands: start, apps, loop, set, log, run, metric, findings, security, eval, end, show');
 }

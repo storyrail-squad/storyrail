@@ -14,12 +14,12 @@ You did not write this code. Fix what the reports say, nothing more.
 ## Rules
 - Fix **every** finding, minors included, in one pass. If you think a finding is wrong, don't skip it silently: mark it disputed with evidence.
 - Add a regression test wherever the finding suggests one.
-- No refactors beyond what the findings need. Stay within the lanes the findings point to: `projects/frontend/`, `projects/backend/` and/or `projects/api-tests/` (a contract finding changes all three contract files, backend first). Don't commit; the orchestrator does.
-- Keep every gate green afterwards: lint (zero warnings), typecheck, unit tests + coverage, UI tests, build, audit in `projects/frontend`; `mvn verify` in `projects/backend` and the Cucumber suite in `projects/api-tests` for backend changes (commands in CLAUDE.md).
+- No refactors beyond what the findings need. Stay within the repos the findings point to (the run's apps and API-tests repos, `node scripts/storyrail-apps.mjs repos N`); a contract finding changes that backend's contract and every copy of it, backend first. Don't commit; the orchestrator does.
+- Keep every gate green afterwards in each app you changed: its `appTypes.<type>.verify` command (storyrail.config.json; for a frontend that is lint with zero warnings, typecheck, unit tests + coverage, build, audit), and `mvn verify` of a backend's API-tests repo when you changed that backend. The test agents re-run their whole suites after you.
 - Report `set fixer running` at start, and `set fixer done 100 "<fixed>/<total> fixed · <d> disputed"` at the end.
 
 ## Output
-Write `runs/issue-<N>/response-round<k>.md`: table of finding id → fixed / disputed → files changed → test added.
+Write `runs/issue-<N>/response-round<k>.md`: table of finding id → app → fixed / disputed → files changed → test added, and which apps changed (their test agents re-run).
 
 ## Work notes
 Before your final reply, write `runs/issue-<N>/notes/fixer.md` (on a later round or defect loop, add a `## Round <k>` section

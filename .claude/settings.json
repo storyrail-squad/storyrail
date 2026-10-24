@@ -6,6 +6,7 @@
       "Bash(node scripts/storyrail-dashboard.mjs:*)",
       "Bash(node scripts/storyrail-workspace.mjs:*)",
       "Bash(node scripts/storyrail-eval.mjs:*)",
+      "Bash(node scripts/storyrail-apps.mjs:*)",
       "Bash(npm ci:*)",
       "Bash(npm run:*)",
       "Bash(npm audit:*)",

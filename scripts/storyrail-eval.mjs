@@ -65,11 +65,11 @@ const runNo = (r) => { const n = Number(r); if (!Number.isInteger(n) || n < 1 ||
 function findProject(key) {
   const p = hub.projects?.[key]?.path;
   if (p) return join(ROOT, p);
-  for (const type of ['backend', 'frontend']) if (existsSync(join(ROOT, 'projects', type, key))) return join(ROOT, 'projects', type, key);
+  for (const type of ['backend', 'frontend', 'api-tests']) if (existsSync(join(ROOT, 'projects', type, key))) return join(ROOT, 'projects', type, key);
   return null;
 }
 function projectDir(key) {
-  return findProject(key) ?? fail(`no project "${key}": not in storyrail.config.json projects, and not cloned under projects/<frontend|backend>/`, 1);
+  return findProject(key) ?? fail(`no project "${key}": not in storyrail.config.json projects, and not cloned under projects/<frontend|backend|api-tests>/`, 1);
 }
 /** {dir:KEY} in a path or command → that project's folder (relative to the hub). */
 const expand = (v) => String(v ?? '').replace(/\{dir:([^}]+)\}/g, (_, k) => projectDir(k).slice(ROOT.length + 1));
@@ -232,7 +232,7 @@ switch (cmd) {
     const branch = branchName(exam.id, st, run);
     const folder = runFolder(exam.id, st, run);
     if (st.apps) {
-      // applications found the usual way (GitLab lookup, clone, apps.json in the run folder), then frozen
+      // applications found the usual way (lookup, clone, apps.json in the run folder), then frozen
       const r = spawnSync(process.execPath, [join(ROOT, 'scripts', 'storyrail-apps.mjs'), 'discover', folder.replace(/^runs\/issue-/, ''), '--apps', st.apps], { stdio: 'inherit' });
       if (r.status !== 0) fail('could not find or clone the applications of this practice story', 1);
     }

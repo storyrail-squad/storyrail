@@ -46,18 +46,18 @@ gh auth login        # GitHub.com → HTTPS → log in with a browser
 
 ### The repos
 
-Clone only the hub; it clones the two projects into `projects/` itself.
+Clone only the hub. The applications are cloned by the runs themselves: a story names them in its **Applications**
+section, and StoryRail finds them as repos in the GitHub org and clones them into `projects/`.
 
 ```bash
 git clone https://github.com/storyrail-squad/storyrail.git
 cd storyrail
-node scripts/storyrail-workspace.mjs sync      # clones library-frontend, library-backend and library-api-tests into projects/
-(cd projects/frontend && npm ci) && (cd projects/frontend/tests/ui && npm ci && npx playwright install chromium)
-(cd projects/api-tests && mvn -B -q test-compile)   # downloads the Cucumber/RestAssured dependencies once
+npx playwright install chromium                 # once, for the UI automation
 ```
 
-The repo names and QA URL live in `storyrail.config.json`. To use other repos (a fork, or your GitLab projects at the
-office), change them there.
+In `storyrail.config.json`: `backlog.repo` (where stories live), `github.org` (where the apps are found) and `apps.map`
+for the exceptions only (a story name that isn't the repo name, a backend whose API tests live in a repo of their own,
+a QA URL). To try a story's apps without running it: `node scripts/storyrail-apps.mjs discover <N>`.
 
 ### First start
 
@@ -70,24 +70,33 @@ Log in with your Claude account when the browser opens, and trust the folder whe
 
 ## 2. Each story
 
-1. **Your analyst writes the story** as an issue in the backlog repo ([squad-backlog](https://github.com/storyrail-squad/squad-backlog)) with the *User story* template: the story, numbered acceptance criteria, and tick **Frontend** and/or **Backend**. StoryRail never writes or changes requirements.
+1. **Your analyst writes the story** as an issue in the backlog repo ([squad-backlog](https://github.com/storyrail-squad/squad-backlog)) with the *User story* template: the story, numbered acceptance criteria, and an **Applications** section with one line per app it changes (what changes, and which other app it calls), e.g.
+
+   ```
+   ## Applications
+
+   - library-backend (books API): reservations per book, a queue of at most 5
+   - library-frontend (catalog app): a Reserve button and the queue position, calls library-backend
+   ```
+
+   StoryRail never writes or changes requirements. Without an Applications section it proposes the apps and asks you.
 2. When you decide that issue should be built, start Claude Code in the `storyrail` folder (`claude`) and give it the issue number:
 
    ```
-   /storyrail 46
+   /storyrail 2
    ```
 
-   Several issues that belong together: `/storyrail 46 47`.
+   Several issues that belong together: `/storyrail 2 3`.
 3. Open the dashboard it prints: **http://localhost:4800**. Keep it on a second screen during a demo.
 4. Answer when it stops at a gate:
    - questions about unclear acceptance criteria,
-   - **"PRs are green: backend #X, API tests #Z, frontend #Y. Merge and deploy to QA?"** (one PR per repo the story touches; backend first, then API tests, then frontend),
+   - **"PRs are green: library-backend #X → library-api-tests #Z → library-frontend #Y. Merge them in this order and deploy to QA?"** (one PR per repo the story touches, in dependency order: providers first),
    - which QA defects to fix now,
    - **sign-off**.
-5. Bugs found later: the analyst uses the **Bug** template (steps, expected, actual), then `/storyrail fix 50 51`. This also starts at requirement fetch, which reads the bug issues.
+5. Bugs found later: the analyst uses the **Bug** template (steps, expected, actual, and the app it is in under Applications), then `/storyrail fix 5 6`. This also starts at requirement fetch, which reads the bug issues.
 6. Where is a run? `/storyrail status`.
 
-Everything a run produces (spec, review and scan reports, QA log and screenshots) is committed in the hub under `runs/issue-<N>/`. The code goes to the project repos.
+Everything a run produces (spec, review and scan reports, QA log and screenshots) is committed in the hub under `runs/issue-<N>/`. The code goes to the apps' repos.
 
 ## The dashboard: squad and chat
 
@@ -172,7 +181,9 @@ requests from the dashboard page itself. Chats are kept per member in `.storyrai
 | `/storyrail` not found | Start `claude` from the repo root, not a subfolder. |
 | `gh: not logged in` | `gh auth login` |
 | Backend steps say "Maven missing" | `brew install maven` and `brew install --cask temurin@21`, then open a new terminal. |
-| Playwright "browser not installed" | `(cd projects/frontend/tests/ui && npx playwright install chromium)` |
-| `projects/frontend` missing, or "has uncommitted changes" | `node scripts/storyrail-workspace.mjs sync`; for uncommitted changes, commit or discard them in that project first. |
+| Playwright "browser not installed" | `npx playwright install chromium` |
+| "no repo for <app>" / "matches several repos" | Check the name in the issue's Applications section and `github.org`, or add the app to `apps.map`. |
+| "…is a clone from the old layout" | Older StoryRail cloned `projects/frontend`, `projects/backend`, `projects/api-tests` directly. Push or discard any work there, delete those three folders, and run again: apps now live in `projects/<type>/<app>`. |
+| An app "has uncommitted changes" | Discovery won't overwrite work: commit or discard the changes in `projects/<type>/<app>` first. |
 | Dashboard shows "dashboard server stopped" | `node scripts/storyrail-dashboard.mjs` in a separate terminal. |
 | A stage fails twice | The orchestrator stops and tells you why. Fix or answer, then say "continue". |

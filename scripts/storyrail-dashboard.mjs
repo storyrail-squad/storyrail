@@ -68,11 +68,25 @@ function globToRegex(pattern) {
   return new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`);
 }
 
+/** A member's stations in this run: "dev@backend" stands for the build of every backend application of the run. */
+function stationsOf(member, st) {
+  const apps = st.run?.apps ?? [];
+  return (member.stations ?? []).flatMap((s) => {
+    const p = /^(dev|tests)@(frontend|backend)$/.exec(s);
+    return p ? apps.filter((a) => a.type === p[2]).map((a) => `${p[1]}@${a.id}`) : [s];
+  });
+}
+
 /** The report files a member wrote in this run, as paths relative to the hub root. */
 function memberOutputs(member, st) {
   const folder = runFolder(st);
   if (!folder || !existsSync(join(ROOT, folder))) return [];
-  const patterns = member.stations.flatMap((s) => squad.outputs?.[s] ?? []).map(globToRegex);
+  const patterns = stationsOf(member, st)
+    .flatMap((s) => {
+      const app = s.includes('@') ? s.split('@')[1] : '';
+      return (squad.outputs?.[s] ?? squad.outputs?.[s.replace(/@.*/, '@*')] ?? []).map((g) => g.replace('$APP', app));
+    })
+    .map(globToRegex);
   const extra = memberNotes(member, st).map((n) => n.path);
   if (!patterns.length) return extra;
   const found = [];
@@ -91,7 +105,7 @@ function memberOutputs(member, st) {
 function memberNotes(member, st) {
   const folder = runFolder(st);
   if (!folder) return [];
-  const ids = member.kind === 'lead' ? ['orchestrator'] : member.stations;
+  const ids = member.kind === 'lead' ? ['orchestrator'] : stationsOf(member, st);
   const found = [];
   for (const kind of ['notes', 'summaries']) {
     for (const id of ids) {
@@ -120,7 +134,7 @@ function briefPath(member) {
 }
 
 function memberFeed(member, st) {
-  const ids = new Set(member.stations);
+  const ids = new Set(stationsOf(member, st));
   if (member.kind === 'lead') ids.add('orchestrator');
   return (st.feed ?? []).filter((f) => ids.has(f.agent));
 }
@@ -135,7 +149,7 @@ function saveChat(id, chat) {
 // ---------- answering ----------
 
 function describeStatus(member, st) {
-  return member.stations
+  return stationsOf(member, st)
     .map((s) => {
       const a = st.agents?.[s] ?? { status: 'pending' };
       return `${s}: ${a.status}${a.progress ? ` ${a.progress}%` : ''}${a.note ? ` – ${a.note}` : ''}`;
@@ -169,7 +183,8 @@ function buildPrompt(member, question, st) {
     '',
     `Run: ${st.run?.title ?? 'no run in progress'} · issues ${(st.run?.issues ?? []).join(', ') || '–'} · phase ${st.run?.phase ?? '–'}`,
     `Run folder: ${runFolder(st) ?? '–'}`,
-    `Your status: ${member.stations.length ? describeStatus(member, st) : 'you coordinate the whole run'}`,
+    `Your status: ${member.kind === 'lead' ? 'you coordinate the whole run' : stationsOf(member, st).length ? describeStatus(member, st) : 'nothing for you in this run (no application of your kind)'}`,
+    st.run?.apps?.length ? `Applications of the run, providers first: ${st.run.apps.map((a) => `${a.id} (${a.type}${a.consumes?.length ? `, calls ${a.consumes.join(', ')}` : ''})`).join(', ')}` : '',
     `Your recent activity (oldest first):\n${feed}`,
     `Your outputs: ${outputs.join(', ') || 'none yet'}`,
     notes,
@@ -183,21 +198,25 @@ function buildPrompt(member, question, st) {
 }
 
 const STATION_LABEL = {
-  'req-fetch': 'requirement fetch', 'fe-dev': 'frontend build', 'be-dev': 'backend build', 'ui-tests': 'UI automation',
-  'api-tests': 'API automation', reviewer: 'review', gate: 'quality scan', fixer: 'review fixes', cicd: 'CI/CD',
+  'req-fetch': 'requirement fetch', reviewer: 'review', gate: 'quality scan', fixer: 'review fixes', cicd: 'CI/CD',
   smoke: 'smoke test', 'qa-api': 'API acceptance on QA', 'manual-tests': 'manual QA', signoff: 'sign-off',
 };
+function stationLabel(s) {
+  const m = /^(dev|tests)@(.+)$/.exec(s);
+  if (m) return `${{ dev: 'build', tests: 'tests' }[m[1]]} of ${m[2]}`;
+  return STATION_LABEL[s] ?? s;
+}
 const STATUS_WORDS = { pending: 'not started yet', running: 'in progress', done: 'done', failed: 'failed', waiting: 'waiting for you', skipped: 'not needed this run' };
 
 function recordsAnswer(member, st) {
   const lines = [];
-  if (!member.stations.length) {
+  if (member.kind === 'lead') {
     lines.push(st.run?.startedAt ? `We're in the ${st.run.phase ?? 'first'} phase of “${st.run.title ?? 'this story'}”.` : 'No story is running right now.');
   }
-  for (const s of member.stations) {
+  for (const s of stationsOf(member, st)) {
     const a = st.agents?.[s] ?? { status: 'pending' };
     const pct = a.status === 'running' && a.progress ? ` (${a.progress}%)` : '';
-    lines.push(`My ${STATION_LABEL[s] ?? s} is ${STATUS_WORDS[a.status] ?? a.status}${pct}${a.note ? `: ${a.note}` : '.'}`);
+    lines.push(`My ${stationLabel(s)} is ${STATUS_WORDS[a.status] ?? a.status}${pct}${a.note ? `: ${a.note}` : '.'}`);
   }
   const feed = memberFeed(member, st).slice(-3);
   if (feed.length) lines.push(`What I've reported lately:\n${feed.map((f) => `• ${f.msg}`).join('\n')}`);
@@ -301,7 +320,8 @@ function evals() {
   const dir = join(ROOT, 'evals', 'results');
   const exams = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => readJson(join(dir, f), null)).filter(Boolean) : [];
   const config = { setup: cfg.setup, runsPerStory: cfg.runsPerStory, targets: cfg.targets, compare: cfg.compare,
-    stories: (cfg.stories ?? []).map(({ id, title, kind, lanes, tests, why }) => ({ id, title, kind, lanes, tests, why })) };
+    stories: (cfg.stories ?? []).map(({ id, title, kind, lanes, apps, tests, why }) => ({ id, title, kind, tests, why,
+      lanes: lanes ?? String(apps ?? '').split(',').map((a) => a.split('>')[0].trim()).filter(Boolean) })) };
   return { config, exams };
 }
 

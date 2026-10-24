@@ -45,7 +45,7 @@ function cut(start, end, insert) {
 // The squad comes from the config instead of the server.
 cut('fetch("squad.json"', 'setInterval(()=>{ if(!$("view-squad").hidden) renderSquad(); },15000);',
   `const SQUAD=${JSON.stringify(squad)};
-squad=SQUAD; squad.forEach(m=>m.stations.forEach(s=>byStation[s]=m)); byStation.orchestrator=squad.find(m=>m.kind==="lead");
+squad=SQUAD;
 engine="records";
 `);
 rep(`async function loadMember(id){

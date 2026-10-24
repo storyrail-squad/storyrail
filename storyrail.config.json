@@ -1,37 +1,38 @@
 {
-  "$comment": "Where StoryRail finds the backlog and the project repos. At the office, point these at your GitLab projects (see docs/storyrail/SETUP.md).",
+  "$comment": "Where StoryRail finds the backlog and the applications. Applications are not listed here: each story names them in its \"## Applications\" section, and StoryRail finds them as repos in github.org. See docs/storyrail/SETUP.md.",
   "backlog": {
     "repo": "storyrail-squad/squad-backlog"
   },
-  "projects": {
+  "github": {
+    "org": "storyrail-squad"
+  },
+  "apps": {
+    "$comment": "Only what can't be found from the repo itself. map: a story name that isn't the repo name (\"name\": \"owner/repo\"), the type when a repo has both package.json and pom.xml, apiTests = a backend whose API tests live in a repo of their own, qaUrl = where its QA deploy is served (default: the repo's homepage).",
+    "map": {
+      "library-backend": {
+        "apiTests": "storyrail-squad/library-api-tests"
+      },
+      "library-frontend": {
+        "qaUrl": "https://storyrail-squad.github.io/library-frontend/"
+      }
+    }
+  },
+  "appTypes": {
+    "$comment": "How each kind of application is built and tested. The same for every app of that kind; an app's own README or package.json scripts win when they say otherwise.",
     "frontend": {
-      "repo": "storyrail-squad/library-frontend",
-      "cloneUrl": "https://github.com/storyrail-squad/library-frontend.git",
-      "path": "projects/frontend",
-      "workflow": "Frontend CI/CD",
-      "qaUrl": "https://storyrail-squad.github.io/library-frontend/",
-      "contract": "contract/openapi.yaml"
+      "verify": "npm ci && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm audit --audit-level=high",
+      "uiTests": "npx playwright test",
+      "localUrl": "http://localhost:4173"
     },
     "backend": {
-      "repo": "storyrail-squad/library-backend",
-      "cloneUrl": "https://github.com/storyrail-squad/library-backend.git",
-      "path": "projects/backend",
-      "workflow": "Backend CI/CD",
-      "qaUrl": null,
-      "contract": "docs/api/openapi.yaml"
-    },
-    "apiTests": {
-      "repo": "storyrail-squad/library-api-tests",
-      "cloneUrl": "https://github.com/storyrail-squad/library-api-tests.git",
-      "path": "projects/api-tests",
-      "workflow": "API tests CI",
-      "qaUrl": null,
-      "contract": "contract/openapi.yaml",
-      "$comment": "Cucumber + Java acceptance tests for the backend. Part of the backend lane; a story branch here runs against the backend branch with the same name."
+      "verify": "mvn -B verify",
+      "run": "mvn -B -q spring-boot:run",
+      "apiTests": "mvn -B verify",
+      "stub": "WireMock (or what the app's tests already use), fed from the provider's contract"
     }
   },
   "squad": {
-    "$comment": "The squad as shown on the dashboard. Rename people freely; stations are the status ids each member reports on; brief = the agent's file name (sr-*) or 'orchestrator'.",
+    "$comment": "The squad as shown on the dashboard. Rename people freely; stations are the status ids each member reports on; brief = the agent's file name (sr-*) or 'orchestrator'. A station like dev@frontend stands for the build of every frontend application of the run (dev@library-frontend, …).",
     "members": [
       {
         "id": "naveen",
@@ -59,7 +60,7 @@
         "role": "Frontend developer",
         "kind": "dev",
         "stations": [
-          "fe-dev"
+          "dev@frontend"
         ],
         "brief": "sr-fe-dev",
         "about": "Builds the React screens with unit tests in library-frontend."
@@ -70,7 +71,7 @@
         "role": "Backend developer",
         "kind": "dev",
         "stations": [
-          "be-dev"
+          "dev@backend"
         ],
         "brief": "sr-be-dev",
         "about": "Builds the Spring Boot API with unit tests in library-backend."
@@ -81,7 +82,7 @@
         "role": "UI test engineer",
         "kind": "test",
         "stations": [
-          "ui-tests"
+          "tests@frontend"
         ],
         "brief": "sr-ui-tests",
         "about": "Automates the screens with Playwright against a local build with a mocked API."
@@ -92,7 +93,7 @@
         "role": "API test engineer",
         "kind": "test",
         "stations": [
-          "api-tests"
+          "tests@backend"
         ],
         "brief": "sr-api-tests",
         "about": "Writes the Cucumber + Java acceptance scenarios for the API in library-api-tests."
@@ -168,13 +169,11 @@
     ],
     "outputs": {
       "req-fetch": [
-        "spec.md"
+        "spec.md",
+        "apps.json"
       ],
-      "ui-tests": [
-        "ui-findings.md"
-      ],
-      "api-tests": [
-        "api-findings.md"
+      "tests@*": [
+        "test-findings-$APP.md"
       ],
       "reviewer": [
         "review-round*.md"

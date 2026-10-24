@@ -40,7 +40,7 @@ A "drop" is `compare.dropPts` percentage points of hidden tests or more (default
 ## Where results live
 
 `results/<exam-id>.json`, one file per exam, committed to the hub. The history is the point: the next exam is compared with
-the last one, and the Evals tab draws all of them. The run folders (`runs/eval-<exam>-<story>-r<k>/`) keep the specs, notes
+the last one, and the Evals tab draws all of them. The run folders (`runs/issue-eval-<exam>-<story>-r<k>/`) keep the specs, notes
 and reviews of every exam run, so a drop can be explained.
 
 ## Commands
@@ -53,15 +53,17 @@ node scripts/storyrail-eval.mjs report        # verdict of the latest exam (exit
 ```
 
 The orchestrator runs `start`, `prepare`, `grade` and `finish` during `/storyrail eval` (see the top of
-`scripts/storyrail-eval.mjs`).
+`scripts/storyrail-eval.mjs`). `prepare` finds and clones the story's applications the usual way (`storyrail-apps.mjs`),
+then puts each repo on its frozen commit.
 
 ## Adding a practice story
 
 The easiest source is a story you already delivered:
 
-1. **Freeze**: the commit of each project just before that story was merged.
-2. **Story**: copy the issue text to `stories/E<n>.md`, and add the refinement answers under "Answers the squad already
-   has", so an exam run never needs to ask anyone.
+1. **Freeze**: the commit of each repo (each app, and a backend's API-tests repo) just before that story was merged.
+2. **Story**: copy the issue text, with its Applications section, to `stories/E<n>.md`, and add the refinement answers
+   under "Answers the squad already has", so an exam run never needs to ask anyone. Put its apps in `evals.json` →
+   `apps` (`"library-backend,library-frontend>library-backend"`): `prepare` finds and clones them like a normal run.
 3. **Hidden tests**: the acceptance tests that came with that story, rewritten as black-box tests that use only what the
    story states. Put them under `hidden/E<n>/` and declare them in `evals.json` (`hidden`, `tests` = how many there are).
 4. Run `check E<n>`: on the frozen code most hidden tests must fail; a test that passes there doesn't test the story.
