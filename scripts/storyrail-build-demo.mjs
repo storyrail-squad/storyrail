@@ -71,15 +71,8 @@ rep('<span class="chip" id="conn">connecting</span>',
 rep('.chip b{color:var(--on-brand);font-weight:600}',
   '.chip b{color:var(--on-brand);font-weight:600}\n.chip.replay{background:transparent;cursor:pointer}\n.chip.replay:hover{border-color:var(--on-brand)}\n.chip.replay:focus-visible{outline:3px solid #fff;outline-offset:2px}');
 
-// Evals tab with sample exam data.
-rep('<button role="tab" id="tab-flow" aria-controls="view-flow" aria-selected="false" tabindex="-1">Flow</button>',
-  '<button role="tab" id="tab-flow" aria-controls="view-flow" aria-selected="false" tabindex="-1">Flow</button>\n    <button role="tab" id="tab-evals" aria-controls="view-evals" aria-selected="false" tabindex="-1">Evals</button>');
-rep('  <div class="scrim" id="scrim" hidden></div>', `${read(SRC, 'evals.html')}  <div class="scrim" id="scrim" hidden></div>`);
-rep('</style>', `${read(SRC, 'evals.css')}</style>`);
-rep('const TABS=["orch","squad","flow"];', 'const TABS=["orch","squad","flow","evals"];');
-rep('  if(name==="orch") renderOrch();',
-  '  if(name==="orch") renderOrch();\n  document.querySelector(".lower").style.display=name==="evals"?"none":""; // the run\'s activity log and stories don\'t belong to the exam');
-rep('/* ---------- Tabs ---------- */', `${read(SRC, 'evals.js')}\n/* ---------- Tabs ---------- */`);
+// Evals tab: the shared exam logic inline, with sample exams instead of evals/results/.
+rep('<script src="evals-core.js"></script>', `<script>\n${read(join(ROOT, 'storyrail-dashboard'), 'evals-core.js')}</script>\n<script>\n${read(SRC, 'evals-sample.js')}</script>`);
 
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, html);

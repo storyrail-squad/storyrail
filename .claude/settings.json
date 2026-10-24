@@ -5,6 +5,7 @@
       "Bash(node scripts/storyrail-status.mjs:*)",
       "Bash(node scripts/storyrail-dashboard.mjs:*)",
       "Bash(node scripts/storyrail-workspace.mjs:*)",
+      "Bash(node scripts/storyrail-eval.mjs:*)",
       "Bash(npm ci:*)",
       "Bash(npm run:*)",
       "Bash(npm audit:*)",
@@ -42,7 +43,10 @@
       "Bash(git push -f:*)",
       "Bash(git reset --hard:*)",
       "Read(./.env)",
-      "Read(./.env.*)"
+      "Read(./.env.*)",
+      "Read(./evals/hidden/**)",
+      "Bash(cat evals/hidden:*)",
+      "Bash(cat ./evals/hidden:*)"
     ]
   }
 }

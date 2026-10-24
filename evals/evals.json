@@ -1,0 +1,74 @@
+{
+  "$comment": "StoryRail exams (evaluation-driven development). See evals/README.md. Practice stories are never in the backlog and never merged; their hidden tests are the answer key the agents never see.",
+  "setup": {
+    "name": "Claude Code + StoryRail agents",
+    "tool": "Claude Code",
+    "toolAdvice": "Pin the previous version until it is fixed, and keep this exam as evidence."
+  },
+  "runsPerStory": 3,
+  "targets": { "hiddenPassPct": 90, "spreadPts": 10, "majorPerRun": 0.5, "humanInterventions": 0 },
+  "compare": { "dropPts": 2 },
+  "hiddenDir": "evals/hidden",
+  "services": {
+    "backend": {
+      "start": "mvn -q -B spring-boot:run",
+      "cwd": "projects/backend",
+      "env": { "APP_CORS_ALLOWED_ORIGINS": "http://localhost:4173" },
+      "url": "http://localhost:8080/api/books",
+      "timeoutSec": 240
+    }
+  },
+  "stories": [
+    {
+      "id": "E1",
+      "title": "Loan history for a book",
+      "kind": "Story",
+      "file": "evals/stories/E1.md",
+      "lanes": ["frontend", "backend"],
+      "why": "Frontend and backend together: a new endpoint, a contract change and a dialog with focus handling",
+      "freeze": {
+        "frontend": "530fdda1a577d8fd7d8d7e68e6800f9edad98d9c",
+        "backend": "a1a80a3271be931216eafecdc0d4fd363b7d8d4b",
+        "apiTests": "020a75b907c1c5fe6851e62cb01b68b7dd1edd5d"
+      },
+      "tests": 11,
+      "hidden": [
+        {
+          "name": "API",
+          "needs": ["backend"],
+          "cwd": ".",
+          "run": "node --test --test-reporter=junit --test-reporter-destination=\"$JUNIT_FILE\" \"$HIDDEN/E1/api.test.mjs\""
+        },
+        {
+          "name": "UI",
+          "needs": ["backend"],
+          "copy": { "from": "E1/ui.spec.ts", "to": "projects/frontend/tests/ui/specs/eval-hidden/E1.spec.ts" },
+          "cwd": "projects/frontend/tests/ui",
+          "env": { "E2E_REAL_API": "http://localhost:8080", "PLAYWRIGHT_JUNIT_OUTPUT_NAME": "$JUNIT_FILE" },
+          "run": "npx playwright test specs/eval-hidden --reporter=junit"
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "title": "Sort the book list",
+      "kind": "Story",
+      "file": "evals/stories/E2.md",
+      "lanes": ["backend"],
+      "why": "Backend only: query validation, stable paging and keeping today's default order",
+      "freeze": {
+        "backend": "a1a80a3271be931216eafecdc0d4fd363b7d8d4b",
+        "apiTests": "020a75b907c1c5fe6851e62cb01b68b7dd1edd5d"
+      },
+      "tests": 11,
+      "hidden": [
+        {
+          "name": "API",
+          "needs": ["backend"],
+          "cwd": ".",
+          "run": "node --test --test-reporter=junit --test-reporter-destination=\"$JUNIT_FILE\" \"$HIDDEN/E2/api.test.mjs\""
+        }
+      ]
+    }
+  ]
+}

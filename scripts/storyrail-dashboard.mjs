@@ -6,10 +6,9 @@
 // Usage: node scripts/storyrail-dashboard.mjs [port]
 //
 // Chat answers (STORYRAIL_ASK, default "auto"):
-//   bob      IBM Bob Shell, read-only:  bob run --mode ask   (needs BOB_API_KEY)
 //   claude   Claude Code, read-only:    claude -p with read tools only
 //   records  no AI: answers from the member's status, log and reports
-//   auto     bob if installed and BOB_API_KEY is set, else claude if installed, else records
+//   auto     claude if installed, else records
 
 import { createServer } from 'node:http';
 import { spawn, execFileSync } from 'node:child_process';
@@ -43,8 +42,7 @@ function onPath(cmd) {
 
 function pickEngine() {
   const wanted = (process.env.STORYRAIL_ASK ?? 'auto').toLowerCase();
-  if (wanted === 'bob' || wanted === 'claude' || wanted === 'records') return wanted;
-  if (onPath('bob') && process.env.BOB_API_KEY) return 'bob';
+  if (wanted === 'claude' || wanted === 'records') return wanted;
   if (onPath('claude')) return 'claude';
   return 'records';
 }
@@ -111,23 +109,14 @@ function memberNotes(member, st) {
 /** Every instruction file of a member's agent: its brief plus the rules that apply to it. */
 function briefPaths(member) {
   if (!member.brief) return [];
-  const bob = existsSync(join(ROOT, '.bob'));
-  if (bob) {
-    const dir = member.brief === 'orchestrator' ? 'rules-sr-orchestrator' : `rules-${member.brief}`;
-    const list = (d) => (existsSync(join(ROOT, '.bob', d)) ? readdirSync(join(ROOT, '.bob', d)).filter((f) => f.endsWith('.md')).sort().map((f) => `.bob/${d}/${f}`) : []);
-    return [...list('rules'), ...list(dir)];
-  }
   const own = member.brief === 'orchestrator' ? '.claude/skills/storyrail/SKILL.md' : `.claude/agents/${member.brief}.md`;
   return ['CLAUDE.md', own].filter((p) => existsSync(join(ROOT, p)));
 }
 
 function briefPath(member) {
   if (!member.brief) return null;
-  const candidates =
-    member.brief === 'orchestrator'
-      ? ['.bob/rules-sr-orchestrator/01-orchestrator.md', '.claude/skills/storyrail/SKILL.md']
-      : [`.bob/rules-${member.brief}/01-brief.md`, `.claude/agents/${member.brief}.md`];
-  return candidates.find((c) => existsSync(join(ROOT, c))) ?? null;
+  const own = member.brief === 'orchestrator' ? '.claude/skills/storyrail/SKILL.md' : `.claude/agents/${member.brief}.md`;
+  return existsSync(join(ROOT, own)) ? own : null;
 }
 
 function memberFeed(member, st) {
@@ -249,23 +238,6 @@ function run(cmd, args, input) {
 }
 
 async function aiAnswer(prompt) {
-  if (ENGINE === 'bob') {
-    // Ask mode is read-only; stream-json ends with a {"type":"result","last_message":…} line.
-    const out = await run('bob', ['run', '--mode', 'ask', '--format', 'stream-json', '--max-turns', '8'], prompt);
-    const result = out
-      .split('\n')
-      .map((l) => {
-        try {
-          return JSON.parse(l);
-        } catch {
-          return null;
-        }
-      })
-      .filter((o) => o && o.type === 'result')
-      .pop();
-    const text = result?.last_message ?? result?.result;
-    return typeof text === 'string' ? text : JSON.stringify(text ?? out.trim().split('\n').pop());
-  }
   // claude: print mode, read-only tools only.
   const out = await run('claude', ['-p', '--output-format', 'json', '--max-turns', '8', '--allowedTools', 'Read,Grep,Glob'], prompt);
   const parsed = JSON.parse(out);
@@ -322,6 +294,17 @@ function trusted(req) {
   return sameOrigin && req.headers['x-storyrail'] === '1';
 }
 
+/** Exam history for the Evals tab: evals/results/*.json plus what the page needs from evals/evals.json (never the hidden tests). */
+function evals() {
+  const cfg = readJson(join(ROOT, 'evals', 'evals.json'), null);
+  if (!cfg) return { config: null, exams: [] };
+  const dir = join(ROOT, 'evals', 'results');
+  const exams = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => readJson(join(dir, f), null)).filter(Boolean) : [];
+  const config = { setup: cfg.setup, runsPerStory: cfg.runsPerStory, targets: cfg.targets, compare: cfg.compare,
+    stories: (cfg.stories ?? []).map(({ id, title, kind, lanes, tests, why }) => ({ id, title, kind, lanes, tests, why })) };
+  return { config, exams };
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
   const path = url.pathname;
@@ -337,6 +320,12 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === 'GET' && path === '/status.json') {
       return send(res, 200, existsSync(join(STATE_DIR, 'status.json')) ? await readFile(join(STATE_DIR, 'status.json')) : '{}');
+    }
+    if (req.method === 'GET' && path === '/evals-core.js') {
+      return send(res, 200, await readFile(join(ROOT, 'storyrail-dashboard', 'evals-core.js')), 'text/javascript; charset=utf-8');
+    }
+    if (req.method === 'GET' && path === '/api/evals') {
+      return send(res, 200, evals());
     }
     if (req.method === 'GET' && path === '/squad.json') {
       return send(res, 200, { engine: ENGINE, members: squad.members });

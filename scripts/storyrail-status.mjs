@@ -11,6 +11,8 @@
 //   node scripts/storyrail-status.mjs metric <unit-fe|unit-be|api|ui> <passed> <total>
 //   node scripts/storyrail-status.mjs findings <blocker> <major> <minor> <fixed>   (blocker/major/minor = still open; fixed = fixed so far)
 //   node scripts/storyrail-status.mjs security <high-critical vulns> <lint warnings>
+//   node scripts/storyrail-status.mjs eval <exam> <story> <run> <runs> <nth> <of> [label...]   exam banner on the dashboard
+//   node scripts/storyrail-status.mjs eval off
 //   node scripts/storyrail-status.mjs end
 //   node scripts/storyrail-status.mjs show
 //
@@ -198,6 +200,18 @@ switch (cmd) {
     });
     break;
   }
+  case 'eval': {
+    // Exam runs (scripts/storyrail-eval.mjs) show a banner: practice story, run k of n, nothing merged or deployed.
+    const [exam, storyId, run, runs, nth, of, ...label] = args;
+    if (!exam) fail('eval needs <exam> <story> <run> <runs> <nth> <of> [label], or: eval off');
+    withLock(() => {
+      const s = load();
+      if (exam === 'off') delete s.run.eval;
+      else s.run.eval = { exam, story: storyId, run: Number(run), runs: Number(runs), nth: Number(nth), of: Number(of), label: label.join(' ') };
+      save(s);
+    });
+    break;
+  }
   case 'end': {
     withLock(() => {
       const s = load();
@@ -210,5 +224,5 @@ switch (cmd) {
     console.log(JSON.stringify(load(), null, 2));
     break;
   default:
-    fail('commands: start, loop, set, log, run, metric, findings, security, end, show');
+    fail('commands: start, loop, set, log, run, metric, findings, security, eval, end, show');
 }

@@ -36,6 +36,7 @@ updates them to `main`). Each project folder is its own git repo with its own br
 | `projects/api-tests/contract/openapi.yaml` | Pinned copy of the backend's contract (CI fails if it differs) | sr-req-fetch copies it |
 | `projects/*/.github/workflows/` | Each project's `ci-cd.yml` (build, test, deploy to QA, smoke) and `security.yml` (CI only — agents don't edit these unless the story is about CI) | — |
 | `runs/issue-<N>/` | Everything one run produces: spec, review and scan reports, fixer responses, QA log | all |
+| `evals/` | Exams (`/storyrail eval`): practice stories, targets and results. **`evals/hidden/` is the answer key: no agent reads it** | orchestrator, `scripts/storyrail-eval.mjs` |
 | `tests/manual/` | Manual QA records of the first run | sr-manual-qa |
 | `docs/history/run-1/` | Archive of the first, hand-orchestrated run (old briefs and reviews, old monorepo paths) — read-only reference | — |
 

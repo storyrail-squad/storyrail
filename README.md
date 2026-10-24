@@ -38,6 +38,11 @@ contract. All repo names live in [`storyrail.config.json`](storyrail.config.json
 Defects found in QA go through a shorter **defect loop** (bug issue in the backlog → fix in the affected project only →
 regression test → diff review + scan → CI/CD → smoke → targeted re-test). Full definitions: [docs/storyrail/PIPELINE.md](docs/storyrail/PIPELINE.md).
 
+**Exams (evaluation-driven development).** When Claude Code is updated or you change a brief, a rule or a skill,
+`/storyrail eval` makes the whole squad build fixed practice stories from frozen code, three times each, and hidden
+tests the agents never see grade every run. Nothing is pushed or merged. The **Evals** tab compares the score with the
+previous exam and says whether to keep the change: [evals/README.md](evals/README.md).
+
 ## How to run it
 
 One-time setup on your Mac: [docs/storyrail/SETUP.md](docs/storyrail/SETUP.md). Run **one story or bug at a time**:
@@ -103,6 +108,7 @@ fixes them before sign-off. You don't need part B for those.
 | `docs/demo/index.html` | Stand-alone demo replay with sample data: open the file, no server or network needed (`node scripts/storyrail-build-demo.mjs` rebuilds it) |
 | `runs/issue-<N>/` | Every run's spec, review and scan reports, fixer responses, QA logs and evidence |
 | `docs/storyrail/` | [Pipeline and gates](docs/storyrail/PIPELINE.md), [setup](docs/storyrail/SETUP.md) |
+| `evals/`, `scripts/storyrail-eval.mjs` | Exams: practice stories, hidden tests (the answer key), targets and every exam's results ([evals/README.md](evals/README.md)) |
 | `docs/brand/` | Logo: the S-Track mark, favicon and wordmark (light and dark); `storyrail-rails.svg`/`.png` is the 1280×640 title card for slides, the GitHub social preview and posts |
 | `tests/manual/`, `docs/history/run-1/`, `docs/QUALITY-GATE.md` | Records of the first run (from before the repo split) |
 

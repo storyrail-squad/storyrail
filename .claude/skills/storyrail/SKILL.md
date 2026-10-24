@@ -1,7 +1,7 @@
 ---
 name: storyrail
-description: Run a backlog issue through the StoryRail agent squad (requirement fetch → FE/BE dev → isolated tests → review + scan → fix → CI/CD to QA → smoke → API acceptance on QA → manual QA → sign-off) across the separate frontend, backend and API-test repos, or run the defect loop for bug issues. Start manually with /storyrail <issue> or /storyrail fix <bug issues>.
-argument-hint: "<issue> [more issues] | fix <bug-issue> [...] | status"
+description: Run a backlog issue through the StoryRail agent squad (requirement fetch → FE/BE dev → isolated tests → review + scan → fix → CI/CD to QA → smoke → API acceptance on QA → manual QA → sign-off) across the separate frontend, backend and API-test repos, run the defect loop for bug issues, or give the squad an exam on fixed practice stories. Start manually with /storyrail <issue>, /storyrail fix <bug issues> or /storyrail eval <reason>.
+argument-hint: "<issue> [more issues] | fix <bug-issue> [...] | eval <baseline|tool|change> [what changed] | status"
 disable-model-invocation: true
 ---
 
@@ -14,6 +14,7 @@ Arguments: `$ARGUMENTS`
 
 - `status` → run `node scripts/storyrail-status.mjs show` and `node scripts/storyrail-workspace.mjs status`, summarise where the run is, stop.
 - `fix <n> [<n> ...]` → **Defect loop** (section D) for those bug issues.
+- `eval <baseline|tool|change> [what changed]` → **Exam** (section E): the squad builds the practice stories in `evals/` and hidden tests grade it.
 - one or more issue numbers → **Story run** (sections A–C).
 
 Stage definitions and gates: [docs/storyrail/PIPELINE.md](../../../docs/storyrail/PIPELINE.md). Read it once at the start.
@@ -122,6 +123,41 @@ Shorter rail; only the project the bug touches.
 5. PR in the affected project's repo with `Fixes $BACKLOG#<bug>` (GitHub closes the backlog issue when it merges); for a backend bug, the regression scenario goes in a second PR in the API tests repo with `Part of $BACKLOG#<bug>`. Checks, **ASK** before merge, merge in the B.6 order, deploy, smoke and API acceptance on QA (as B.6–7b).
 6. **sr-manual-qa re-test**: each defect's steps plus a quick regression around it → `qa-retest.md`. Verified → comment "Verified on QA" on each bug (`gh issue comment <bug> -R $BACKLOG`). Not fixed → `gh issue reopen <bug> -R $BACKLOG` and **ASK** how to proceed.
 7. Standalone: commit the run records in the hub as in C.2 (first bullet). From triage: return to the story's sign-off (B.8).
+
+## E. Exam (`/storyrail eval <baseline|tool|change> [what changed]`)
+
+Evaluation-driven development: before you trust a change to the squad (a Claude Code update, an edited brief, rule or
+skill), the squad takes the same exam as before and the scores are compared. Background: [evals/README.md](../../../evals/README.md).
+
+- **What is graded:** the practice stories in `evals/evals.json`, built from frozen commits, each `runsPerStory` times. Hidden
+  tests in `evals/hidden/` grade every run. **Never open, list, search or quote anything under `evals/hidden/`**, and never
+  pass it to an agent: the answer key must stay unseen (`.claude/settings.json` denies reading it too).
+- **Nothing leaves the machine:** no push, no PR, no merge, no deploy, no backlog comment. Exam branches (`eval/…`) are local.
+
+1. **Prerequisites** as A.1 (but no `git switch -c` in the hub: exam records are committed at the end). `node scripts/storyrail-eval.mjs validate`.
+   Start the dashboard as A.2. `reason` = `baseline` (first exam, or after you reset the targets), `tool` (Claude Code or
+   model update, your setup unchanged) or `change` (a brief, rule, skill or config changed: name it). If unclear, **ASK**.
+2. `node scripts/storyrail-eval.mjs start --reason <reason> --detail "<what changed>"`. Tell the user it takes about
+   (stories × runs) story runs and that the dashboard shows an EVAL banner meanwhile.
+3. For each story `S` in `evals.json`, for run `k` = 1 … `runsPerStory`:
+   1. `node scripts/storyrail-eval.mjs prepare S k`: frozen code on a local branch in each project, run folder
+      `runs/eval-<exam>-S-r<k>/` with the story as `story.md`, the dashboard banner.
+   2. Run **B.1 to B.5** exactly as for a real story, with these differences:
+      - sr-req-fetch gets mode `eval` and the story file instead of an issue; its run folder is the exam run folder.
+      - **No questions to the user.** The story's "Answers the squad already has" section answers refinement questions. If an
+        agent still needs a decision, decide yourself from the story, note it in the run folder, and count **1 human
+        intervention** for every time the run needed you; only a hard stop (gate failed twice) is asked, and counts too.
+      - Every agent starts fresh for every run (no memory of earlier runs): that is what makes runs comparable.
+      - Skip the branch creation in B.1: each project is already on its exam branch. Commit there after each stage, as usual; never push.
+      - Note for the grade: **major** = blocker + major findings of the round-1 review and scan; **rounds** = fix rounds run.
+   3. `node scripts/storyrail-eval.mjs grade S k --major <n> --rounds <n> --human <n>`: it starts the backend from the run's
+      code, runs the hidden tests, records the result. One line to the user: `S run k: <passed>/<tests> hidden tests`.
+4. `node scripts/storyrail-eval.mjs finish`: verdict against the previous exam (or the targets for a baseline), projects
+   back on their branches, banner off. Show the verdict to the user as it prints.
+5. Commit `evals/results/<exam>.json` and `runs/eval-<exam>-*` in the hub on a branch `eval/<exam>`, push, PR, merge (the
+   result is what the next exam compares with). The Evals tab on the dashboard shows the history.
+6. Verdict **worse** after a `change` → recommend reverting it; after a `tool` update → recommend pinning the previous
+   version and keeping the exam as evidence. Never edit the hidden tests or the targets to make an exam pass.
 
 ## Finish
 

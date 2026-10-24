@@ -40,6 +40,13 @@ For bugs found in QA. Shorter than the story rail: only the affected project run
 Severity decides what blocks sign-off: blocker/major are fixed first; minor/low can go to the backlog. A defect that shows
 the requirement itself was wrong is a requirement change and goes back through the full rail.
 
+## Exams (`/storyrail eval <baseline|tool|change>`)
+
+Not part of a story run: a check on the squad itself. The squad builds the practice stories in `evals/` (stages 1–5 of the
+rail, from frozen commits, several runs each, nothing pushed) and hidden tests grade every run. The result is compared
+with the previous exam (the first one with the targets): **keep** a change, **roll it back**, or after a Claude Code
+update, **pin** the previous version. Details: [evals/README.md](../../evals/README.md).
+
 ## Where things are
 
 | What | Where |
@@ -50,6 +57,7 @@ the requirement itself was wrong is a requirement change and goes back through t
 | Backlog repo, project repos, QA URL | `storyrail.config.json` |
 | Local clones of the projects | `projects/frontend`, `projects/backend` (`node scripts/storyrail-workspace.mjs sync`) |
 | Output of one run | `runs/issue-<N>/` |
+| Exams: practice stories, hidden tests, results | `evals/` (`node scripts/storyrail-eval.mjs list`) |
 | Live dashboard | `node scripts/storyrail-dashboard.mjs` → http://localhost:4800 |
 | Setup on a new machine | [SETUP.md](SETUP.md) |
 

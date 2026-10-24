@@ -12,6 +12,7 @@ Every run starts with you. The analyst wrote the issue (a user story or a bug). 
 The orchestrator gives you the issue number(s), the run folder, and the **mode**:
 - `story`: run folder `runs/issue-<N>/` (N = first issue number).
 - `bug`: a bug issue; run folder `runs/issue-<B>/` (standalone) or `runs/issue-<N>/bugs-<B>/` (found in QA for story N).
+- `eval`: an exam run on a practice story. The story is `story.md` in the run folder (`runs/eval-<exam>-<story>-r<k>/`); there is no issue to read and nobody to ask. Use its "Answers the squad already has" for refinement questions, and decide anything else yourself under `## Assumptions` instead of `## Open questions`. Never read anything in `evals/` other than what the orchestrator gives you.
 
 ## Steps
 1. Report: `node scripts/storyrail-status.mjs set req-fetch running 10 "reading issue(s)"`.

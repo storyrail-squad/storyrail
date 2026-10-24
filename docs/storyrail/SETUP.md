@@ -98,7 +98,20 @@ hand-off glows amber, and when Naveen sends Sandrine's fixes back for a re-check
 
 The **Squad** tab shows every agent as a squad member with a name and a role (Sindhu the functional analyst, Varunesh and
 Meysam the developers, Priya the strict reviewer, Charlotte the release engineer, …), with whoever is working shown large
-at the top. The **Flow** tab has the rail diagram.
+at the top. The **Flow** tab has the rail diagram. The **Evals** tab shows the squad's exams (`evals/results/`): the verdict
+of the latest one against the one before, a scoreboard per practice story and the history. While an exam runs, every tab
+shows an EVAL banner.
+
+### Exams after a change
+
+Run `/storyrail eval baseline` once, while the squad works well. After that:
+
+- Claude Code (or the model) was updated → `/storyrail eval tool`
+- You changed a brief, a rule, a skill or a setting → `/storyrail eval change <what you changed>`
+
+An exam is 2 practice stories × 3 runs of stages 1–5, so it takes a few hours and a good part of your plan's limit: run
+it when something changed, not every day. It needs the backend to start locally (Java 21, Maven) and the frontend's UI
+automation (Playwright), like a normal run. How it works and how to add practice stories: [evals/README.md](../../evals/README.md).
 
 The theme switch in the top-right corner (screen, sun and moon icons for Auto, Light and Dark) sets the colour theme. Auto follows your system setting; Light or Dark
 overrides it and is remembered in that browser.
@@ -130,9 +143,8 @@ Meysam explain afterwards why they built something the way they did.
 
 | `STORYRAIL_ASK` | Who answers | Needs |
 |---|---|---|
-| `auto` (default) | Bob if it is set up, else Claude Code, else records | – |
+| `auto` (default) | Claude Code if it is installed, else records | – |
 | `claude` | Claude Code in print mode, read-only tools | `claude` installed and logged in |
-| `bob` | IBM Bob Shell in **ask mode** (read-only) | `bob` installed and `BOB_API_KEY` set |
 | `records` | No AI: status, recent log and reports | – |
 
 ```bash
