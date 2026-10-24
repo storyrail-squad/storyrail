@@ -5,7 +5,7 @@
 // Nothing is pushed, merged or deployed. See evals/README.md.
 //
 // Usage (the orchestrator runs these during /storyrail eval; you can run them by hand too):
-//   node scripts/storyrail-eval.mjs validate                                  check evals/evals.json and its files
+//   node scripts/storyrail-eval.mjs validate [--allow-todo]                   check evals/evals.json and its files
 //   node scripts/storyrail-eval.mjs start --reason baseline|tool|change [--label "…"] [--detail "…"]
 //   node scripts/storyrail-eval.mjs prepare <story> <run>                     frozen code on a local eval branch, run folder, dashboard banner
 //   node scripts/storyrail-eval.mjs grade <story> <run> --major <n> --rounds <n> --human <n>
@@ -60,12 +60,22 @@ const num = (k) => {
 // ---------- helpers ----------
 const story = (id) => cfg.stories.find((s) => s.id.toLowerCase() === String(id).toLowerCase()) ?? fail(`unknown practice story "${id}". Known: ${cfg.stories.map((s) => s.id).join(', ')}`);
 const runNo = (r) => { const n = Number(r); if (!Number.isInteger(n) || n < 1 || n > (cfg.runsPerStory ?? 3)) fail(`run must be 1–${cfg.runsPerStory ?? 3}`); return n; };
-/** Where a frozen project lives in the hub, e.g. backend → projects/backend. */
-function projectDir(key) {
+/** Where a frozen project lives in the hub: a configured project (backend → projects/backend), or an application
+ *  found from a story (INSU-ta01 → projects/backend/INSU-ta01, cloned by storyrail-apps.mjs). */
+function findProject(key) {
   const p = hub.projects?.[key]?.path;
-  if (!p) fail(`storyrail.config.json has no projects.${key}.path`);
-  return join(ROOT, p);
+  if (p) return join(ROOT, p);
+  for (const type of ['backend', 'frontend']) if (existsSync(join(ROOT, 'projects', type, key))) return join(ROOT, 'projects', type, key);
+  return null;
 }
+function projectDir(key) {
+  return findProject(key) ?? fail(`no project "${key}": not in storyrail.config.json projects, and not cloned under projects/<frontend|backend>/`, 1);
+}
+/** {dir:KEY} in a path or command → that project's folder (relative to the hub). */
+const expand = (v) => String(v ?? '').replace(/\{dir:([^}]+)\}/g, (_, k) => projectDir(k).slice(ROOT.length + 1));
+/** The run folder of one exam run. Hubs whose tools expect runs/issue-<N>/ set "runFolder" in evals.json. */
+const runKey = (exam, st, run) => `eval-${exam}-${st.id}-r${run}`;
+const runFolder = (exam, st, run) => (cfg.runFolder ?? 'runs/{key}').replace('{key}', runKey(exam, st, run));
 const git = (dir, ...a) => execFileSync('git', a, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const status = (...a) => spawnSync(process.execPath, [join(ROOT, 'scripts', 'storyrail-status.mjs'), ...a], { stdio: 'inherit' });
 const state = () => readJson(STATE, null);
@@ -101,7 +111,7 @@ async function startServices(names) {
   for (const name of names) {
     const s = cfg.services?.[name] ?? fail(`evals.json has no services.${name}`);
     if (await up(s.url)) fail(`${s.url} already answers: stop whatever runs there, so the grade uses the run's own code`, 1);
-    const child = spawn(s.start, { cwd: resolve(ROOT, s.cwd ?? '.'), shell: true, detached: true, stdio: 'ignore', env: { ...process.env, ...(s.env ?? {}) } });
+    const child = spawn(expand(s.start), { cwd: resolve(ROOT, expand(s.cwd ?? '.')), shell: true, detached: true, stdio: 'ignore', env: { ...process.env, ...(s.env ?? {}) } });
     started.push(child);
     const until = Date.now() + (s.timeoutSec ?? 180) * 1000;
     process.stdout.write(`  starting ${name} `);
@@ -140,12 +150,12 @@ async function runHidden(st, label) {
     for (const h of st.hidden) {
       const file = join(out, `${h.name}.xml`);
       rmSync(file, { force: true });
-      const copied = h.copy ? resolve(ROOT, h.copy.to) : null;
+      const copied = h.copy ? resolve(ROOT, expand(h.copy.to)) : null;
       if (copied) { mkdirSync(dirname(copied), { recursive: true }); copyFileSync(join(HIDDEN, h.copy.from), copied); }
       const env = { ...process.env, JUNIT_FILE: file, HIDDEN };
-      for (const [k, v] of Object.entries(h.env ?? {})) env[k] = String(v).replace('$JUNIT_FILE', file).replace('$HIDDEN', HIDDEN);
+      for (const [k, v] of Object.entries(h.env ?? {})) env[k] = expand(v).replace('$JUNIT_FILE', file).replace('$HIDDEN', HIDDEN);
       process.stdout.write(`  hidden ${h.name} tests … `);
-      spawnSync(h.run, { cwd: resolve(ROOT, h.cwd ?? '.'), shell: true, env, stdio: ['ignore', 'ignore', 'ignore'], timeout: 15 * 60_000 });
+      spawnSync(expand(h.run), { cwd: resolve(ROOT, expand(h.cwd ?? '.')), shell: true, env, stdio: ['ignore', 'ignore', 'ignore'], timeout: 15 * 60_000 });
       if (copied) rmSync(dirname(copied), { recursive: true, force: true });
       const r = junit(file);
       console.log(`${r.passed}/${r.count}`);
@@ -172,18 +182,27 @@ switch (cmd) {
     for (const k of ['runsPerStory', 'targets', 'stories']) if (!cfg[k]) problems.push(`evals.json: ${k} is missing`);
     for (const st of cfg.stories ?? []) {
       if (!st.file || !existsSync(join(ROOT, st.file))) problems.push(`${st.id}: story file ${st.file} not found`);
+      if (!st.lanes && !st.apps) problems.push(`${st.id}: needs "lanes" (configured projects) or "apps" (applications to find, e.g. "INSU-ta01,INSU-fa01>INSU-ta01")`);
       if (!st.tests) problems.push(`${st.id}: "tests" (number of hidden tests) is missing`);
       if (!Object.keys(st.freeze ?? {}).length) problems.push(`${st.id}: "freeze" has no frozen commits`);
       for (const [k, sha] of Object.entries(st.freeze ?? {})) {
-        if (String(sha).startsWith('TODO')) problems.push(`${st.id}: freeze.${k} is still a TODO`);
-        else if (!/^[0-9a-f]{7,40}$/.test(sha)) problems.push(`${st.id}: freeze.${k} is not a commit id`);
+        if (String(sha).includes('TODO')) continue; // reported below
+        if (!/^[0-9a-f]{7,40}$/.test(sha)) problems.push(`${st.id}: freeze.${k} is not a commit id`);
       }
       for (const h of st.hidden ?? []) {
         for (const n of h.needs ?? []) if (!cfg.services?.[n]) problems.push(`${st.id}/${h.name}: needs unknown service ${n}`);
-        if (h.copy && !existsSync(join(HIDDEN, h.copy.from))) problems.push(`${st.id}/${h.name}: hidden file ${h.copy.from} not found`);
+        if (h.copy && !String(h.copy.from).startsWith('TODO') && !existsSync(join(HIDDEN, h.copy.from))) problems.push(`${st.id}/${h.name}: hidden file ${h.copy.from} not found`);
         for (const m of h.run.matchAll(/\$HIDDEN\/([^"\s]+)/g)) if (!existsSync(join(HIDDEN, m[1]))) problems.push(`${st.id}/${h.name}: hidden file ${m[1]} not found`);
       }
     }
+    // every value still marked TODO(office), anywhere in evals.json
+    const walk = (v, path) => {
+      if (typeof v === 'string') { if (v.includes('TODO')) problems.push(`${path} is still a TODO`); }
+      else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== '$comment') walk(x, path ? `${path}.${k}` : k);
+    };
+    walk(cfg, '');
+    const todos = problems.filter((p) => p.includes('TODO'));
+    if (flags['allow-todo'] && todos.length === problems.length && todos.length) { console.log(`template: ${todos.length} TODO(office) value(s) still to fill in:\n${todos.map((p) => `  · ${p}`).join('\n')}`); break; }
     if (problems.length) { console.error(problems.map((p) => `✗ ${p}`).join('\n')); process.exit(1); }
     console.log(`ok: ${cfg.stories.length} practice stories, ${cfg.stories.reduce((a, s) => a + s.tests, 0)} hidden tests, ${cfg.runsPerStory} runs each`);
     break;
@@ -211,10 +230,16 @@ switch (cmd) {
     const st = story(pos[0]);
     const run = runNo(pos[1]);
     const branch = branchName(exam.id, st, run);
+    const folder = runFolder(exam.id, st, run);
+    if (st.apps) {
+      // applications found the usual way (GitLab lookup, clone, apps.json in the run folder), then frozen
+      const r = spawnSync(process.execPath, [join(ROOT, 'scripts', 'storyrail-apps.mjs'), 'discover', folder.replace(/^runs\/issue-/, ''), '--apps', st.apps], { stdio: 'inherit' });
+      if (r.status !== 0) fail('could not find or clone the applications of this practice story', 1);
+    }
     console.log(`${st.id} run ${run}: frozen code`);
     s.home ??= {};
     freeze(st, branch, s.home);
-    const runDir = join(ROOT, 'runs', `eval-${exam.id}-${st.id}-r${run}`);
+    const runDir = join(ROOT, folder);
     mkdirSync(runDir, { recursive: true });
     copyFileSync(join(ROOT, st.file), join(runDir, 'story.md'));
     s.current = { story: st.id, run, branch, startedAt: new Date().toISOString() };
@@ -223,7 +248,7 @@ switch (cmd) {
     const nth = cfg.stories.findIndex((x) => x.id === st.id) * (cfg.runsPerStory ?? 3) + run;
     status('start', st.id, `EVAL · ${st.id} ${st.title}`);
     status('eval', exam.id, st.id, String(run), String(cfg.runsPerStory ?? 3), String(nth), String(of), exam.label);
-    console.log(`Run folder: runs/eval-${exam.id}-${st.id}-r${run}/ (the story is story.md there). Lanes: ${st.lanes.join(', ')}. Branch in each project: ${branch}`);
+    console.log(`Run folder: ${folder}/ (the story is story.md there). ${st.apps ? `Applications: ${st.apps} (apps.json there)` : `Lanes: ${st.lanes.join(', ')}`}. Branch in each project: ${branch}`);
     break;
   }
   case 'grade': {
@@ -256,8 +281,8 @@ switch (cmd) {
     printVerdict(exam, prev);
     // put the projects back on main and drop the local exam branches
     for (const key of new Set(cfg.stories.flatMap((st) => Object.keys(st.freeze ?? {})))) {
-      const dir = projectDir(key);
-      if (!existsSync(join(dir, '.git'))) continue;
+      const dir = findProject(key);
+      if (!dir || !existsSync(join(dir, '.git'))) continue;
       try {
         if (!git(dir, 'branch', '--show-current').startsWith(`eval/${exam.id}/`)) continue; // never touch other work
         git(dir, 'reset', '--quiet', '--hard'); // leftovers of the last exam run only
@@ -269,7 +294,7 @@ switch (cmd) {
     rmSync(STATE, { force: true });
     status('eval', 'off');
     status('end');
-    console.log(`\nSaved: evals/results/${exam.id}.json. Commit it with the run folders (runs/eval-${exam.id}-*).`);
+    console.log(`\nSaved: evals/results/${exam.id}.json. Commit it with the run folders (${runFolder(exam.id, { id: '*' }, '*')}).`);
     break;
   }
   case 'report': {

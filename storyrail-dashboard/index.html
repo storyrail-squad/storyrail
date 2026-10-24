@@ -981,7 +981,7 @@ function evSetData(d){
   $("ev-empty").hidden=has; document.querySelectorAll("[data-ev-has]").forEach(el=>{ el.hidden=!has; });
   $("ev-mock").hidden=!d.sample;
   const tool=(EV.config.setup||{}).tool||"AI tool";
-  $("ev-intro").textContent="An exam you start yourself with /storyrail eval: after a "+tool+" update, or when you change a brief, a rule or a skill. Your real user stories still run once, as usual.";
+  $("ev-intro").textContent="An exam you start yourself with /storyrail eval: after "+(/^[aeiou]/i.test(tool)?"an ":"a ")+tool+" update, or when you change how the squad works (a brief, rule, skill or setting). Your real user stories still run once, as usual.";
   $("ev-runs-text").textContent="The full squad runs every story "+(EV.config.runsPerStory||3)+" times.";
   if(!has) return;
   evSel=evSel||EV.config.stories[0].id;
