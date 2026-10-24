@@ -103,6 +103,7 @@ fixes them before sign-off. You don't need part B for those.
 | `docs/demo/index.html` | Stand-alone demo replay with sample data: open the file, no server or network needed (`node scripts/storyrail-build-demo.mjs` rebuilds it) |
 | `runs/issue-<N>/` | Every run's spec, review and scan reports, fixer responses, QA logs and evidence |
 | `docs/storyrail/` | [Pipeline and gates](docs/storyrail/PIPELINE.md), [setup](docs/storyrail/SETUP.md) |
+| `docs/brand/` | Logo: the S-Track mark, favicon and wordmark (light and dark); `storyrail-rails.svg`/`.png` is the 1280×640 title card for slides, the GitHub social preview and posts |
 | `tests/manual/`, `docs/history/run-1/`, `docs/QUALITY-GATE.md` | Records of the first run (from before the repo split) |
 
 How to build, test and deploy each project: see the README of
